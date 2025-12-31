@@ -961,13 +961,10 @@ const game = {
         totalTurns++;
         
         if(totalTurns%20 === 0) {
-            ui.toast(`O GALO PASSOU!`);
-            players.forEach(pl=>{
-                if(pl.active){
-                    pl.money+=200;
-                    pl.pos=0;
-                }
-            });
+            ui.toast(`O GALO PASSOU! Você volta ao Marco Zero!`);
+            // Apenas o jogador atual vai para Marco Zero
+            p.money+=200;
+            p.pos=0;
             ui.updatePositions();
             game.syncGameState();
             return;
