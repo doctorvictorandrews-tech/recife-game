@@ -267,7 +267,7 @@
                 <div id="player-list-container"></div>
             </div>
             
-            <button class="btn-main" id="btn-start-game" style="display:none;" onclick="multiplayer.startGame()">COMEÇAR JOGO</button>
+            <button class="btn-main" onclick="multiplayer.showCharacterSelection()">ESCOLHER PERSONAGENS</button>
             <button class="btn-main" style="background: var(--c-red); box-shadow: 0 6px 0 #b71c1c;" onclick="location.reload()">SAIR</button>
         </div>
     </div>
@@ -277,7 +277,10 @@
     <div class="card-menu">
         <h2 class="brand" style="font-size:1.5rem; color:var(--c-dark);">ESCOLHA SEU PERSONAGEM:</h2>
         <div class="char-grid" id="char-grid"></div>
-        <div style="margin-top: 15px; font-size: 0.9rem; color: #666;">Aguardando outros jogadores...</div>
+        <div id="char-status" style="margin-top: 15px; font-size: 0.9rem; color: #666;">Clique em um personagem para escolher</div>
+        <button class="btn-main" id="btn-start-game" style="display:none; margin-top: 15px;" onclick="multiplayer.startGame()">COMEÇAR JOGO</button>
+        <button class="btn-main" style="background: var(--c-red); box-shadow: 0 6px 0 #b71c1c; margin-top: 10px;" onclick="multiplayer.backToLobby()">VOLTAR</button>
+    </div>
     </div>
 </div>
 
@@ -364,8 +367,36 @@
             </div>
         </div>
         <div style="display:flex; gap:10px;">
-            <button class="btn-game btn-buy" onclick="game.sendOffer()">O OUTRO ACEITA?</button>
+            <button class="btn-game btn-buy" onclick="game.sendOffer()">ENVIAR PROPOSTA</button>
             <button class="btn-game btn-pass" onclick="document.getElementById('trade-modal').style.display='none'">CANCELAR</button>
+        </div>
+    </div>
+</div>
+
+<div id="trade-offer-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10000; display:flex; align-items:center; justify-content:center;">
+    <div class="trade-box" style="max-width: 500px;">
+        <h2 class="brand" style="text-align:center; margin:0; color:var(--c-yel);">PROPOSTA RECEBIDA!</h2>
+        <div style="padding: 20px; background: #fff; border-radius: 10px; margin: 15px 0;">
+            <div style="font-weight: 700; font-size: 1.2rem; margin-bottom: 10px; text-align:center;" id="offer-from"></div>
+            
+            <div class="trade-cols">
+                <div class="t-col">
+                    <div class="t-head">VOCÊ RECEBE</div>
+                    <div id="offer-receive-money" style="padding:10px; font-weight:700; color:var(--c-green);"></div>
+                    <div id="offer-receive-props"></div>
+                </div>
+                <div class="t-col">
+                    <div class="t-head">VOCÊ DÁ</div>
+                    <div id="offer-give-props"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="offer-timer" style="text-align:center; color:#fbc02d; font-weight:700; margin-bottom:10px;">Tempo: 60s</div>
+        
+        <div style="display:flex; gap:10px;">
+            <button class="btn-game btn-buy" onclick="game.respondOffer(true)" style="flex:1;">✅ ACEITAR</button>
+            <button class="btn-game btn-pass" onclick="game.respondOffer(false)" style="flex:1;">❌ RECUSAR</button>
         </div>
     </div>
 </div>
