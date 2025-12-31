@@ -486,7 +486,8 @@ const ui = {
             const t=document.createElement('div');
             t.className='token';
             t.id=`tok${i}`;
-            t.innerHTML=`${p.icon}<div class="token-shield" style="display:none" id="sh${i}">🛡️</div>`;
+            t.setAttribute('data-player', i);
+            t.innerHTML=`<span>${p.icon}</span><div class="token-shield" style="display:none" id="sh${i}">🛡️</div>`;
             b.appendChild(t);
         });
         

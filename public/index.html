@@ -19,7 +19,21 @@
             background: linear-gradient(120deg, #1565c0, #fbc02d, #c62828, #1565c0);
             background-size: 400% 400%; animation: frevoBG 15s ease infinite;
             height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column;
+            position: relative;
         }
+        
+        /* Padrão de fundo inspirado em Azulejos Portugueses */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: 
+                repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.05) 35px, rgba(255,255,255,.05) 70px),
+                repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(255,255,255,.03) 35px, rgba(255,255,255,.03) 70px);
+            pointer-events: none;
+            opacity: 0.3;
+        }
+        
         @keyframes frevoBG { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 
         h1, h2, h3, button, .brand { font-family: 'Titan One', cursive; letter-spacing: 1px; text-shadow: 2px 2px 0 rgba(0,0,0,0.2); }
@@ -37,12 +51,115 @@
         #screen-lobby, #screen-char, #screen-end { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; overflow-y: auto; padding: 20px; }
         #screen-end { display: none; }
         
-        .card-menu { background: #fff; border: 8px solid var(--c-dark); border-radius: 30px; padding: 25px; text-align: center; width: 90%; max-width: 450px; box-shadow: 0 20px 0 var(--c-yel); margin: auto; }
-        .sel-box { margin: 15px 0; text-align: left; }
-        select, input[type="text"] { width: 100%; padding: 12px; border: 3px solid var(--c-dark); font-family: 'Nunito'; font-weight: 800; font-size: 1rem; border-radius: 10px; }
-        .btn-main { width: 100%; padding: 15px; margin-top: 15px; border: none; border-radius: 50px; font-size: 1.5rem; background: var(--c-green); color: #fff; cursor: pointer; box-shadow: 0 6px 0 #1b5e20; transition: 0.1s; text-transform: uppercase; }
-        .btn-main:active { transform: translateY(4px); box-shadow: 0 3px 0 #1b5e20; }
-        .btn-main:disabled { background: #ccc; cursor: not-allowed; }
+        .card-menu { 
+            background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%); 
+            border: 8px solid var(--c-dark); 
+            border-radius: 30px; 
+            padding: 30px; 
+            text-align: center; 
+            width: 90%; 
+            max-width: 500px; 
+            box-shadow: 
+                0 0 0 4px rgba(251, 192, 45, 0.5),
+                0 25px 60px rgba(0,0,0,0.4); 
+            margin: auto;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Decoração recifense no topo */
+        .card-menu::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: repeating-linear-gradient(
+                90deg,
+                #1565c0 0px, #1565c0 20px,
+                #fbc02d 20px, #fbc02d 40px,
+                #d32f2f 40px, #d32f2f 60px
+            );
+        }
+        
+        .card-menu h2 {
+            position: relative;
+            color: var(--c-dark);
+            margin-top: 10px;
+            font-size: 2rem;
+        }
+        
+        .sel-box { 
+            margin: 20px 0; 
+            text-align: left;
+            position: relative;
+        }
+        
+        select, input[type="text"] { 
+            width: 100%; 
+            padding: 15px; 
+            border: 3px solid var(--c-dark); 
+            font-family: 'Nunito'; 
+            font-weight: 800; 
+            font-size: 1rem; 
+            border-radius: 15px;
+            background: white;
+            transition: all 0.3s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+        }
+        
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--c-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.15);
+        }
+        
+        .btn-main { 
+            width: 100%; 
+            padding: 18px; 
+            margin-top: 15px; 
+            border: none; 
+            border-radius: 50px; 
+            font-size: 1.5rem; 
+            background: linear-gradient(135deg, #388e3c, #2e7d32); 
+            color: #fff; 
+            cursor: pointer; 
+            box-shadow: 0 8px 0 #1b5e20, 0 10px 20px rgba(0,0,0,0.3); 
+            transition: all 0.1s; 
+            text-transform: uppercase;
+            font-weight: 900;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Efeito de brilho no botão */
+        .btn-main::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.5s;
+        }
+        
+        .btn-main:hover::before {
+            left: 100%;
+        }
+        
+        .btn-main:active { 
+            transform: translateY(6px); 
+            box-shadow: 0 2px 0 #1b5e20, 0 4px 10px rgba(0,0,0,0.3); 
+        }
+        
+        .btn-main:disabled { 
+            background: linear-gradient(135deg, #9e9e9e, #757575); 
+            cursor: not-allowed;
+            box-shadow: 0 8px 0 #616161;
+        }
         
         .room-info { background: #e3f2fd; border: 2px solid var(--c-blue); border-radius: 15px; padding: 15px; margin: 15px 0; }
         .room-code { font-size: 3rem; color: var(--c-blue); letter-spacing: 5px; font-weight: 900; }
@@ -68,16 +185,57 @@
         #board-container { position: relative; transform-origin: center center; box-shadow: 0 0 50px rgba(0,0,0,0.5); display: block; }
         
         #board { 
-            width: 900px; height: 1050px; 
-            display: grid; grid-template-columns: repeat(11, 1fr); grid-template-rows: repeat(11, 1fr); 
-            background: var(--board-bg); border: 4px solid var(--border-col); 
+            width: 900px; 
+            height: 1050px; 
+            display: grid; 
+            grid-template-columns: repeat(11, 1fr); 
+            grid-template-rows: repeat(11, 1fr); 
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1), transparent),
+                linear-gradient(135deg, #8bc34a 0%, #c5e1a5 50%, #aed581 100%);
+            border: 8px solid #4a2c1f;
+            box-shadow: 
+                0 0 0 4px #d7ccc8,
+                inset 0 0 50px rgba(0,0,0,0.1),
+                0 20px 60px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        
+        /* Textura de madeira nas bordas */
+        #board::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            background: 
+                repeating-linear-gradient(90deg, 
+                    #6d4c41 0px, #5d4037 2px, 
+                    #4e342e 4px, #5d4037 6px);
+            z-index: -1;
+            border-radius: 4px;
+        }
+        
+        /* Decoração de canto - Marca d'água "RECIFE" */
+        #board::after {
+            content: 'RECIFE';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 12rem;
+            font-family: 'Titan One';
+            color: rgba(255,255,255,0.05);
+            letter-spacing: 20px;
+            pointer-events: none;
+            z-index: 1;
         }
 
-        /* PAINEL HUD */
+        /* PAINEL HUD - ESCONDIDO ATÉ JOGO COMEÇAR */
         #hud-panel { 
-            background: #fff; display: flex; flex-direction: column; z-index: 5000; 
+            background: #fff; display: none; flex-direction: column; z-index: 5000; 
             box-shadow: 0 -5px 20px rgba(0,0,0,0.2); flex-shrink: 0; 
             width: 100%; border-top: 4px solid var(--c-dark);
+        }
+        #game-layout.active #hud-panel { display: flex; }
             padding: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
         }
 
@@ -157,8 +315,86 @@
         .deck.reves { bottom: 20%; right: 15%; background: linear-gradient(135deg, #ffa726, #f57c00); transform: rotate(5deg); }
         .deck-label { font-size: 3rem; opacity: 0.8; }
 
-        .token { width: 50px; height: 50px; position: absolute; z-index: 50; font-size: 3rem; text-align: center; line-height: 50px; transition: all 0.4s; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.6)); pointer-events: none; }
-        .token-shield { position: absolute; top:-5px; right:-5px; font-size: 1rem; background: blue; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border: 1px solid #fff; }
+        .token { 
+            width: 50px; 
+            height: 50px; 
+            position: absolute; 
+            z-index: 50; 
+            text-align: center; 
+            line-height: 50px; 
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
+            pointer-events: none;
+            transform-style: preserve-3d;
+        }
+        
+        /* Peões 3D realistas - Base cilíndrica */
+        .token::before {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 40px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, var(--token-color, #333) 0%, var(--token-dark, #111) 100%);
+            border-radius: 12px 12px 6px 6px;
+            box-shadow: 
+                0 0 0 2px rgba(255,255,255,0.2),
+                0 5px 10px rgba(0,0,0,0.6),
+                inset -2px -2px 4px rgba(0,0,0,0.3),
+                inset 2px 2px 4px rgba(255,255,255,0.2);
+            z-index: -1;
+        }
+        
+        /* Topo do peão */
+        .token::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            left: 50%;
+            top: 20%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle at 30% 30%, var(--token-light, #555), var(--token-color, #333));
+            border-radius: 50%;
+            box-shadow: 
+                0 2px 4px rgba(0,0,0,0.4),
+                inset -1px -1px 2px rgba(0,0,0,0.3),
+                inset 1px 1px 2px rgba(255,255,255,0.3);
+        }
+        
+        /* Cores dos peões por jogador */
+        .token[data-player="0"] { --token-color: #d32f2f; --token-dark: #b71c1c; --token-light: #ef5350; }
+        .token[data-player="1"] { --token-color: #1976d2; --token-dark: #0d47a1; --token-light: #42a5f5; }
+        .token[data-player="2"] { --token-color: #388e3c; --token-dark: #1b5e20; --token-light: #66bb6a; }
+        .token[data-player="3"] { --token-color: #fbc02d; --token-dark: #f57f17; --token-light: #ffeb3b; }
+        
+        /* Ícone do personagem no peão */
+        .token > span {
+            position: relative;
+            z-index: 10;
+            font-size: 1.8rem;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+            display: block;
+            transform: translateY(-2px);
+        }
+        
+        .token-shield { 
+            position: absolute; 
+            top: -8px; 
+            right: -8px; 
+            font-size: 1rem; 
+            background: #2196f3; 
+            border-radius: 50%; 
+            width: 22px; 
+            height: 22px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            border: 2px solid #fff; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            z-index: 100;
+        }
 
         .build-area { position: absolute; top: 2px; width: 100%; display: flex; justify-content: center; gap: 2px; z-index: 4; }
         .house-3d { width: 12px; height: 12px; background: var(--c-green); border: 1px solid #000; box-shadow: 1px 1px 0 #000; }
@@ -186,12 +422,83 @@
         .pc-head { padding: 15px; background: var(--c-blue); color: #fff; font-family: 'Titan One'; font-size: 1.4rem; text-align: center; }
         .rent-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
         .rent-table td { padding: 6px 12px; border-bottom: 1px dashed #ddd; font-weight: 800; }
-        .card-flip-container { perspective: 1000px; display: none; pointer-events: auto; z-index: 8000; width: 85%; height: 60vh; max-height: 500px; }
-        .card-flip { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s; }
+        .card-flip-container { 
+            perspective: 1000px; 
+            display: none; 
+            pointer-events: auto; 
+            z-index: 8000; 
+            width: 85%; 
+            height: 60vh; 
+            max-height: 500px; 
+        }
+        .card-flip { 
+            width: 100%; 
+            height: 100%; 
+            position: relative; 
+            transform-style: preserve-3d; 
+            transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
+        }
         .card-flip.flipped { transform: rotateY(180deg); }
-        .cf-face { position: absolute; inset: 0; backface-visibility: hidden; border: 6px solid #fff; border-radius: 20px; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .cf-back { background: var(--c-blue); color: #fff; font-family: 'Titan One'; font-size: 5rem; transform: rotateY(0deg); }
-        .cf-front { transform: rotateY(180deg); background: #fff; color: var(--c-dark); }
+        
+        .cf-face { 
+            position: absolute; 
+            inset: 0; 
+            backface-visibility: hidden; 
+            border: 8px solid #fff; 
+            border-radius: 20px; 
+            background: #fff; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 30px; 
+            text-align: center; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+        
+        /* Padrão de azulejos no fundo das cartas */
+        .cf-face::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 2%, transparent 3%),
+                radial-gradient(circle at 75% 75%, rgba(255,255,255,0.1) 2%, transparent 3%);
+            background-size: 40px 40px;
+            opacity: 0.3;
+        }
+        
+        .cf-back { 
+            background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%); 
+            color: #fff; 
+            font-family: 'Titan One'; 
+            font-size: 5rem; 
+            transform: rotateY(0deg);
+            border-color: #fbc02d;
+        }
+        
+        .cf-front { 
+            transform: rotateY(180deg); 
+            background: linear-gradient(180deg, #fff 0%, #f5f5f5 100%); 
+            color: var(--c-dark);
+        }
+        
+        .cf-front h2 {
+            position: relative;
+            z-index: 1;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #d32f2f;
+        }
+        
+        .cf-front p {
+            position: relative;
+            z-index: 1;
+            font-size: 1.3rem;
+            font-weight: 700;
+            line-height: 1.5;
+        }
         .dice-stage { position: absolute; display: flex; gap: 20px; pointer-events: none; opacity: 0; top: 30%; transition: 0.2s; z-index: 7000; }
         .dice-stage.active { opacity: 1; }
         .cube { width: 80px; height: 80px; background: #fff; border-radius: 15px; display: grid; place-items: center; font-size: 3rem; font-weight: bold; border: 4px solid var(--c-dark); box-shadow: 0 10px 20px rgba(0,0,0,0.4); font-family: 'Titan One'; }
