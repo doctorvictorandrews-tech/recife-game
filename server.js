@@ -24,8 +24,11 @@ app.get('/ping', (req, res) => {
 const games = new Map();
 const playerConnections = new Map();
 
-// Personagens válidos
-const VALID_CHARS = ['💅','🗿','🛶','🦀','🦈','☂️','🐀','🌽','🐔','🚌','🍥','🐻','🎩','🚔','🐚','😎'];
+// ✅ CORREÇÃO #1: Personagens atualizados (16 culturais recifenses)
+const VALID_CHARS = [
+    '🎪', '🦈', '👑', '⛵', '🎭', '🦀', '🌴', '🪸',
+    '🚢', '🎸', '🏛️', '🌉', '⭐', '🍰', '🐓', '🌊'
+];
 
 // Função de sanitização
 function sanitizeName(name) {
@@ -115,6 +118,7 @@ function createRoom(ws, message) {
             id: playerId,
             name: sanitizeName(message.playerName),
             icon: '',
+            charId: '', // ✅ MELHORIA: Adicionar charId
             ws: ws,
             connected: true,
             host: true
@@ -160,6 +164,7 @@ function joinRoom(ws, message) {
         id: playerId,
         name: sanitizeName(message.playerName),
         icon: '',
+        charId: '', // ✅ MELHORIA: Adicionar charId
         ws: ws,
         connected: true,
         host: false
@@ -201,8 +206,13 @@ function selectCharacter(ws, message) {
         return;
     }
     
-    // Verificar se já está em uso
-    if (game.players.some(p => p.icon === message.icon && p.id !== playerInfo.playerId)) {
+    // Verificar se já está em uso (por OUTRO jogador)
+    const alreadyTaken = game.players.some(p => 
+        p.icon === message.icon && 
+        p.id !== playerInfo.playerId
+    );
+    
+    if (alreadyTaken) {
         ws.send(JSON.stringify({ 
             type: 'error', 
             message: 'Personagem já escolhido!' 
@@ -213,11 +223,13 @@ function selectCharacter(ws, message) {
     const player = game.players.find(p => p.id === playerInfo.playerId);
     if (player) {
         player.icon = message.icon;
+        player.charId = message.charId || ''; // ✅ MELHORIA: Salvar charId
         
         broadcast(playerInfo.roomId, {
             type: 'characterSelected',
             playerId: playerInfo.playerId,
-            icon: message.icon
+            icon: message.icon,
+            charId: message.charId
         });
     }
 }
@@ -241,19 +253,25 @@ function startGame(ws, message) {
     }
     
     game.started = true;
+    
+    // ✅ CORREÇÃO #3: Dinheiro inicial correto por modo
+    const initialMoney = game.gameMode === 'hardcore' ? 1000 : 1500;
+    
     game.gameData = {
         turn: 0,
         rolled: false,
         animating: false,
         pendingCardType: null,
+        pendingEvent: null, // ✅ MELHORIA: Adicionar pendingEvent
         totalTurns: 0,
         props: Array(40).fill(null),
         players: game.players.map((p, i) => ({
             id: p.id,
             name: p.name,
             icon: p.icon,
+            charId: p.charId || '', // ✅ MELHORIA: Incluir charId
             pos: 0,
-            money: game.gameMode === 'hardcore' ? 500 : 1000,
+            money: initialMoney, // ✅ CORREÇÃO #3: Usa variável correta
             jailed: false,
             protection: false,
             jailTurns: 0,
@@ -281,12 +299,43 @@ function handleGameAction(ws, message) {
     const game = games.get(playerInfo.roomId);
     if (!game || !game.started) return;
     
-    if (game.gameData.turn !== playerInfo.playerId) {
-        ws.send(JSON.stringify({ 
-            type: 'error', 
-            message: 'Não é seu turno!' 
-        }));
-        return;
+    // ✅ CORREÇÃO #2: Permitir tradeResponse fora do turno
+    const actionsWithoutTurnCheck = ['tradeResponse', 'tradeOffer'];
+    
+    if (!actionsWithoutTurnCheck.includes(message.action)) {
+        // Apenas verificar turno para ações normais
+        if (game.gameData.turn !== playerInfo.playerId) {
+            ws.send(JSON.stringify({ 
+                type: 'error', 
+                message: 'Não é seu turno!' 
+            }));
+            return;
+        }
+    }
+    
+    // ✅ MELHORIA: Validação extra para trades
+    if (message.action === 'tradeResponse' && message.gameData.tradeAccepted) {
+        const offer = message.gameData.pendingOffer;
+        if (offer) {
+            // Validar se quem está aceitando é o destinatário
+            if (offer.to !== playerInfo.playerId) {
+                ws.send(JSON.stringify({ 
+                    type: 'error', 
+                    message: 'Esta oferta não é para você!' 
+                }));
+                return;
+            }
+            
+            // Validar se quem enviou ainda tem dinheiro suficiente
+            const fromPlayer = game.gameData.players[offer.from];
+            if (fromPlayer.money < offer.moneyGive) {
+                ws.send(JSON.stringify({ 
+                    type: 'error', 
+                    message: 'Jogador não tem mais dinheiro suficiente!' 
+                }));
+                return;
+            }
+        }
     }
     
     game.gameData = message.gameData;
@@ -319,6 +368,7 @@ function serializeGameState(game) {
             id: p.id,
             name: p.name,
             icon: p.icon,
+            charId: p.charId, // ✅ MELHORIA: Incluir charId
             connected: p.connected,
             host: p.host
         })),
@@ -328,6 +378,7 @@ function serializeGameState(game) {
     };
 }
 
+// Limpar salas vazias a cada minuto
 setInterval(() => {
     games.forEach((game, roomId) => {
         const hasConnectedPlayers = game.players.some(p => p.connected);
@@ -340,5 +391,6 @@ setInterval(() => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🎮 Servidor Recife Imobiliário rodando na porta ${PORT}`);
+    console.log(`🎮 Servidor Recife Imobiliário v2.3 rodando na porta ${PORT}`);
+    console.log(`✅ Bugs corrigidos: Personagens, Negociação, Dinheiro Hardcore`);
 });
