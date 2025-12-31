@@ -849,7 +849,8 @@ const game = {
             animating,
             pendingCardType,
             pendingEvent,
-            totalTurns
+            totalTurns,
+            nextGaloTurn // ✅ CRÍTICO: Sincronizar galo
         };
         multiplayer.sendGameAction('sync', gameData);
     },
@@ -962,13 +963,13 @@ const game = {
                 }
             }
             
-            // ✅ CORREÇÃO: NÃO retorna aqui! Continua para permitir compra
+            // ✅ CORREÇÃO FINAL: Retorna aqui para NÃO mover personagem
             pendingEvent = null;
             rolled = true;
             animating = false;
             game.syncGameState();
             ui.hud();
-            // return; ❌ REMOVIDO para permitir comprar após evento
+            return; // ✅ CRÍTICO: Impede movimento após evento
         }
 
         if(pendingCardType) return;
