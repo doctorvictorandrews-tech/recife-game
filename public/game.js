@@ -359,6 +359,12 @@ const multiplayer = {
         document.getElementById('screen-lobby').style.display = 'none';
         document.getElementById('screen-char').style.display = 'none';
         
+        // 🔥 CRÍTICO: Carregar gameMode do servidor!
+        if (gameData.gameMode) {
+            gameMode = gameData.gameMode;
+            console.log('🔥 MODO DO JOGO:', gameMode);
+        }
+        
         // Carregar dados do jogo
         players = gameData.players;
         props = gameData.props;
@@ -1073,8 +1079,11 @@ const game = {
         const s = BD[p.pos];
         const pr = props[p.pos];
         
+        console.log('🔍 LAND - gameMode:', gameMode, 'hardcoreTaxPaid:', p.hardcoreTaxPaid);
+        
         // 🔥 TAXA HARDCORE - Primeiro turno de cada jogador
         if(gameMode === 'hardcore' && !p.hardcoreTaxPaid) {
+            console.log('🔥 APLICANDO TAXA HARDCORE!');
             p.hardcoreTaxPaid = true;
             p.money -= 500;
             
