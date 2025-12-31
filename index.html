@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Recife Imobiliário: Multiplayer Online</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --wood: #5d4037; --paper: #fff8e1;
+            --c-blue: #0277bd; --c-red: #d32f2f; --c-green: #2e7d32; --c-yel: #fbc02d;
+            --c-dark: #263238; --board-bg: #c5e1a5; --space-bg: #ffffff; --border-col: #1a1a1a;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            margin: 0; font-family: 'Nunito', sans-serif; 
+            background: linear-gradient(120deg, #1565c0, #fbc02d, #c62828, #1565c0);
+            background-size: 400% 400%; animation: frevoBG 15s ease infinite;
+            height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column;
+        }
+        @keyframes frevoBG { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+        h1, h2, h3, button, .brand { font-family: 'Titan One', cursive; letter-spacing: 1px; text-shadow: 2px 2px 0 rgba(0,0,0,0.2); }
+
+        /* --- FX LAYERS --- */
+        #fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 8000; overflow: hidden; }
+        .shark-anim { position: absolute; bottom: 25%; right: -50vw; font-size: 30vh; filter: drop-shadow(10px 10px 0 #000); transition: 0.1s; display: none; transform: scaleX(-1); }
+        .shark-anim.active { display: block; animation: sharkPass 4s linear forwards; }
+        @keyframes sharkPass { 0% {right: -50vw;} 100% {right: 120vw;} }
+        .traffic-anim { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; font-family: 'Titan One'; color: #ffeb3b; font-size: 3rem; text-align: center; animation: pulseTraffic 0.5s infinite; text-shadow: 0 0 20px red; flex-direction: column; z-index: 8500; }
+        .traffic-anim.active { display: flex; }
+        @keyframes pulseTraffic { 0%{opacity:0.9;} 100%{opacity:1;} }
+
+        /* --- UI: SCREENS --- */
+        #screen-lobby, #screen-char, #screen-end { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; overflow-y: auto; padding: 20px; }
+        #screen-end { display: none; }
+        
+        .card-menu { background: #fff; border: 8px solid var(--c-dark); border-radius: 30px; padding: 25px; text-align: center; width: 90%; max-width: 450px; box-shadow: 0 20px 0 var(--c-yel); margin: auto; }
+        .sel-box { margin: 15px 0; text-align: left; }
+        select, input[type="text"] { width: 100%; padding: 12px; border: 3px solid var(--c-dark); font-family: 'Nunito'; font-weight: 800; font-size: 1rem; border-radius: 10px; }
+        .btn-main { width: 100%; padding: 15px; margin-top: 15px; border: none; border-radius: 50px; font-size: 1.5rem; background: var(--c-green); color: #fff; cursor: pointer; box-shadow: 0 6px 0 #1b5e20; transition: 0.1s; text-transform: uppercase; }
+        .btn-main:active { transform: translateY(4px); box-shadow: 0 3px 0 #1b5e20; }
+        .btn-main:disabled { background: #ccc; cursor: not-allowed; }
+        
+        .room-info { background: #e3f2fd; border: 2px solid var(--c-blue); border-radius: 15px; padding: 15px; margin: 15px 0; }
+        .room-code { font-size: 3rem; color: var(--c-blue); letter-spacing: 5px; font-weight: 900; }
+        .player-list { margin: 15px 0; }
+        .player-item { background: #fff; border: 2px solid #ddd; border-radius: 10px; padding: 10px; margin: 5px 0; display: flex; justify-content: space-between; align-items: center; }
+        .player-item.ready { border-color: var(--c-green); background: #e8f5e9; }
+        
+        .char-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 15px; max-height: 40vh; overflow-y: auto; }
+        .char-opt { border: 2px solid #ccc; border-radius: 12px; padding: 5px; cursor: pointer; background: #fff; font-size: 2rem; text-align: center; transition: 0.2s; }
+        .char-opt:hover { transform: scale(1.1); border-color: var(--c-blue); }
+        .char-opt.taken { opacity: 0.3; cursor: not-allowed; }
+        .char-opt.selected { border: 4px solid var(--c-green); background: #e8f5e9; }
+
+        /* --- JOGO: LAYOUT --- */
+        #game-layout { display: none; width: 100%; height: 100%; overflow: hidden; flex-direction: column; }
+        #game-layout.active { display: flex; }
+
+        /* ÁREA DO TABULEIRO */
+        #board-area { 
+            position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; 
+            background: rgba(0,0,0,0.1); flex: 1; width: 100%; min-height: 0; 
+        }
+        #board-container { position: relative; transform-origin: center center; box-shadow: 0 0 50px rgba(0,0,0,0.5); display: block; }
+        
+        #board { 
+            width: 900px; height: 1050px; 
+            display: grid; grid-template-columns: repeat(11, 1fr); grid-template-rows: repeat(11, 1fr); 
+            background: var(--board-bg); border: 4px solid var(--border-col); 
+        }
+
+        /* PAINEL HUD */
+        #hud-panel { 
+            background: #fff; display: flex; flex-direction: column; z-index: 5000; 
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.2); flex-shrink: 0; 
+            width: 100%; border-top: 4px solid var(--c-dark);
+            padding: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
+        }
+
+        #action-btns { width: 100%; margin-bottom: 5px; }
+        #normal-btns, #jail-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+
+        .btn-game { 
+            border: none; border-radius: 10px; font-family: 'Titan One'; cursor: pointer; color: #fff; 
+            box-shadow: 0 3px 0 rgba(0,0,0,0.3); text-transform: uppercase; position: relative; 
+            width: 100%; transition: 0.1s; display: flex; align-items: center; justify-content: center; 
+            text-align: center; height: 45px; font-size: 0.9rem; padding: 0 5px;
+        }
+        .btn-game:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.3); }
+        .btn-game:disabled { background: #cfd8dc !important; color: #b0bec5 !important; box-shadow: none; transform: translateY(2px); cursor: default; opacity: 0.7; }
+        
+        .btn-roll { background: var(--c-yel); color: var(--c-dark); }
+        .btn-buy { background: var(--c-green); }
+        .btn-pass { background: var(--c-red); }
+        .btn-trade { background: #1976d2; }
+        .btn-card { background: linear-gradient(45deg, #ff9800, #f57c00); animation: pulseBtn 1s infinite; display: none; width: 100%; grid-column: span 2; }
+        @keyframes pulseBtn { 0%{transform:scale(1)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
+        
+        .hud-top-bar { 
+            background: #eceff1; border: 2px solid #b0bec5; border-radius: 8px; 
+            padding: 5px 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+        }
+        .btn-inv { 
+            background: #37474f; color: white; border-radius: 8px; cursor: pointer; border: none; 
+            font-weight: 800; text-transform: uppercase; height: 35px; width: 100%; font-size: 0.8rem;
+        }
+        .connection-status { font-size: 0.8rem; color: #666; }
+        .connection-status.connected { color: var(--c-green); }
+        .connection-status.disconnected { color: var(--c-red); }
+
+        .hud-content { display: none; }
+
+        /* --- DESKTOP OVERRIDES --- */
+        @media (min-width: 900px) {
+            #game-layout { flex-direction: row; }
+            #hud-panel { width: 380px; height: 100%; border-left: 6px solid var(--c-dark); border-top: none; padding: 0; }
+            #board { width: 1300px; height: 1000px; } 
+            .hud-content { padding: 20px; display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+            .hud-top-bar { padding: 15px; margin: 0; border: none; border-bottom: 2px dashed #cfd8dc; border-radius: 0; order: -1; }
+            #action-btns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; padding: 20px; }
+            #normal-btns, #jail-btns { display: flex; flex-direction: column; gap: 10px; }
+            .btn-game { min-height: 60px; font-size: 1.3rem; padding: 18px; } 
+            .btn-inv { display: none; }
+            #players-scroll { display: flex; flex-direction: column; margin-bottom: 15px; max-height: 20vh; overflow-y: auto; gap: 5px; padding: 0 10px; border-bottom: 2px dashed #ccc; padding-bottom:10px;}
+            #desktop-props-container { display: block; flex: 1; overflow-y: auto; padding-top: 10px; }
+        }
+        
+        @media (max-width: 899px) {
+            #players-scroll, #desktop-props-container { display: none; }
+            #mobile-controls-wrapper { display: flex; flex-direction: column; width: 100%; }
+        }
+
+        /* SPACE DESIGN */
+        .space { background: var(--space-bg); border: 1px solid var(--border-col); position: relative; display: flex; flex-direction: column; font-size: 0.75rem; font-weight: 800; color: #000; overflow: hidden; }
+        .rot-left { transform: rotate(90deg); }
+        .rot-top { transform: rotate(180deg); }
+        .rot-right { transform: rotate(-90deg); }
+        .space-content { width:100%; height:100%; display:flex; flex-direction:column; justify-content:space-between; text-align:center; padding: 2px; }
+        .color-strip { height: 20%; width: 100%; border-bottom: 2px solid #000; }
+        .sp-name { flex: 1; display: flex; align-items: center; justify-content: center; line-height: 1.1; font-weight: 900; padding:0 2px; }
+        .sp-price { font-family: 'Nunito'; font-weight: 700; padding-bottom: 5px; font-size: 0.85rem; }
+        .sp-icon { font-size: 2.5rem; display: flex; align-items: center; justify-content: center; height: 100%; }
+        .space.owned { border: 4px solid !important; z-index: 5; }
+
+        .center-hub { grid-column: 2/11; grid-row: 2/11; position: relative; background: transparent; display: flex; justify-content: center; align-items: center; flex-direction: column; pointer-events: none; }
+        .center-title { font-family: 'Titan One', cursive; color: #1565c0; font-size: 7rem; text-transform: uppercase; line-height: 0.9; text-align: center; transform: rotate(-5deg); text-shadow: 4px 4px 0 #fff, 8px 8px 0 rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; }
+        .center-sub { font-size: 2.5rem; color: #d32f2f; -webkit-text-stroke: 1px #fff; }
+        .center-icon { font-size: 4rem; margin-top: -20px; filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.3)); }
+
+        .deck { position: absolute; width: 110px; height: 150px; border-radius: 15px; cursor: pointer; box-shadow: 0 10px 0 rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.4); z-index: 10; display: flex; align-items: center; justify-content: center; text-align: center; font-family: 'Titan One'; font-size: 1.5rem; color: #fff; -webkit-text-stroke: 1px rgba(0,0,0,0.3); pointer-events: auto; border: 2px solid rgba(255,255,255,0.4); transition: transform 0.1s; }
+        .deck:active { transform: translateY(4px); box-shadow: 0 6px 0 rgba(0,0,0,0.2); }
+        .deck.chance { top: 20%; left: 15%; background: linear-gradient(135deg, #ab47bc, #7b1fa2); transform: rotate(-5deg); }
+        .deck.reves { bottom: 20%; right: 15%; background: linear-gradient(135deg, #ffa726, #f57c00); transform: rotate(5deg); }
+        .deck-label { font-size: 3rem; opacity: 0.8; }
+
+        .token { width: 50px; height: 50px; position: absolute; z-index: 50; font-size: 3rem; text-align: center; line-height: 50px; transition: all 0.4s; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.6)); pointer-events: none; }
+        .token-shield { position: absolute; top:-5px; right:-5px; font-size: 1rem; background: blue; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border: 1px solid #fff; }
+
+        .build-area { position: absolute; top: 2px; width: 100%; display: flex; justify-content: center; gap: 2px; z-index: 4; }
+        .house-3d { width: 12px; height: 12px; background: var(--c-green); border: 1px solid #000; box-shadow: 1px 1px 0 #000; }
+        .hotel-3d { width: 18px; height: 18px; background: var(--c-red); border: 1px solid #000; box-shadow: 1px 1px 0 #000; }
+        .loan-badge { position: absolute; inset:0; background: rgba(255,0,0,0.3); display: flex; justify-content: center; align-items: center; color: red; font-weight: 900; font-size: 2rem; transform: rotate(-45deg); display:none; pointer-events: none; z-index: 6;}
+
+        .money-display { font-size: 1.4rem; color: var(--c-green); font-family: 'Titan One'; }
+        .money-display.debt { color: #d32f2f; animation: pulseRed 1s infinite; }
+        @keyframes pulseRed { 0%{opacity:1} 50%{opacity:0.5} 100%{opacity:1} }
+        
+        .p-stat { background: #fff; border: 1px solid #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 0.8rem; padding: 8px; }
+        .p-stat.active { background: #e3f2fd; border: 2px solid var(--c-blue); transform: scale(1.02); }
+        .p-stat.bankrupt { opacity: 0.5; text-decoration: line-through; }
+        .p-stat.disconnected { opacity: 0.7; background: #ffebee; }
+        
+        .prop-item { background:#fff; border-left:8px solid #333; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold; display:flex; justify-content:space-between; margin-bottom:5px; border:1px solid #eee; font-size: 0.85rem; align-items: center; transition:0.2s;}
+        .prop-item:hover { background: #f5f5f5; transform:translateX(2px); }
+        .prop-item.loan { background: #ffebee; border-left-color: #d32f2f !important; }
+        .loan-alert { color: #d32f2f; font-size: 0.7rem; display: block; }
+
+        #overlay-layer { position: fixed; inset: 0; pointer-events: none; z-index: 9500; display: flex; justify-content: center; align-items: center; }
+        #overlay-bg { position:absolute; inset:0; background:rgba(0,0,0,0.7); pointer-events:auto; display:none; }
+        
+        .prop-card { width: 90%; max-width: 400px; background: #fff; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.8); pointer-events: auto; display: none; border: 4px solid var(--c-dark); animation: popIn 0.3s; z-index: 9600; position:relative; }
+        .pc-head { padding: 15px; background: var(--c-blue); color: #fff; font-family: 'Titan One'; font-size: 1.4rem; text-align: center; }
+        .rent-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.9rem; }
+        .rent-table td { padding: 6px 12px; border-bottom: 1px dashed #ddd; font-weight: 800; }
+        .card-flip-container { perspective: 1000px; display: none; pointer-events: auto; z-index: 8000; width: 85%; height: 60vh; max-height: 500px; }
+        .card-flip { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s; }
+        .card-flip.flipped { transform: rotateY(180deg); }
+        .cf-face { position: absolute; inset: 0; backface-visibility: hidden; border: 6px solid #fff; border-radius: 20px; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .cf-back { background: var(--c-blue); color: #fff; font-family: 'Titan One'; font-size: 5rem; transform: rotateY(0deg); }
+        .cf-front { transform: rotateY(180deg); background: #fff; color: var(--c-dark); }
+        .dice-stage { position: absolute; display: flex; gap: 20px; pointer-events: none; opacity: 0; top: 30%; transition: 0.2s; z-index: 7000; }
+        .dice-stage.active { opacity: 1; }
+        .cube { width: 80px; height: 80px; background: #fff; border-radius: 15px; display: grid; place-items: center; font-size: 3rem; font-weight: bold; border: 4px solid var(--c-dark); box-shadow: 0 10px 20px rgba(0,0,0,0.4); font-family: 'Titan One'; }
+        .cube.shake { animation: shake 0.1s infinite; }
+        @keyframes shake { 0%{transform:rotate(0)} 25%{transform:rotate(8deg)} 75%{transform:rotate(-8deg)} }
+        .toast { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: #fff; color: #000; padding: 15px 30px; border-radius: 50px; border: 4px solid var(--c-yel); z-index: 9999; animation: slideDown 3s forwards; font-family: 'Titan One'; font-size: 1.2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.4); white-space: nowrap; }
+        @keyframes slideDown { 0%{opacity:0;transform:translate(-50%,-50px)} 10%{opacity:1;transform:translate(-50%,0)} 90%{opacity:1} 100%{opacity:0;transform:translate(-50%,-50px)} }
+        @keyframes popIn { from{transform:scale(0)} to{transform:scale(1)} }
+        
+        #inv-modal, #trade-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:7000; flex-direction:column; padding:20px; align-items: center; justify-content: center; }
+        #inv-list { flex:1; overflow-y:auto; width:100%; max-width:500px; margin:0 auto; display:flex; flex-direction:column; gap:8px; }
+        
+        /* TRADE MODAL STYLES */
+        .trade-box { background: #fff; width: 95%; max-width: 600px; border-radius: 20px; border: 4px solid var(--c-blue); padding: 15px; max-height: 80vh; overflow-y: auto; display: flex; flex-direction: column; }
+        .trade-cols { display: flex; gap: 10px; margin-bottom: 15px; }
+        .t-col { flex: 1; border: 1px solid #ccc; padding: 5px; border-radius: 8px; }
+        .t-head { font-weight: 900; text-align: center; background: #eee; padding: 5px; border-radius: 5px; margin-bottom: 5px; }
+        .t-opt { padding: 5px; display: block; font-size: 0.8rem; border-bottom: 1px solid #eee; }
+        
+        .waiting-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9998; display: none; align-items: center; justify-content: center; }
+        .waiting-message { background: #fff; padding: 30px; border-radius: 20px; text-align: center; font-size: 1.5rem; font-family: 'Titan One'; }
+    </style>
+</head>
+<body>
+
+<div id="fx-layer">
+    <div class="shark-anim">🦈</div>
+    <div class="traffic-anim"><div style="font-size:5rem;">🛑</div><div>ENGARRAFAMENTO!</div></div>
+</div>
+
+<div class="waiting-overlay" id="waiting-overlay">
+    <div class="waiting-message">
+        <div style="font-size: 3rem; margin-bottom: 20px;">⏳</div>
+        <div id="waiting-text">Aguardando jogadores...</div>
+    </div>
+</div>
+
+<div id="screen-lobby">
+    <div class="card-menu" id="lobby-menu">
+        <h1 style="color:var(--c-blue); font-size:2.5rem; margin:0; line-height:1;">RECIFE IMOBILIÁRIO<br><span style="font-size:1rem; color:#000;">MULTIPLAYER ONLINE</span></h1>
+        
+        <div id="lobby-start" style="display:block;">
+            <div class="sel-box">
+                <label>SEU NOME</label>
+                <input type="text" id="player-name" placeholder="Digite seu nome" maxlength="15">
+            </div>
+            <button class="btn-main" onclick="multiplayer.createRoom()">CRIAR SALA</button>
+            <div style="margin: 20px 0; color: #666; font-weight: bold;">OU</div>
+            <div class="sel-box">
+                <label>CÓDIGO DA SALA</label>
+                <input type="text" id="room-code-input" placeholder="ABCD12" maxlength="6" style="text-transform: uppercase;">
+            </div>
+            <button class="btn-main" style="background: var(--c-blue); box-shadow: 0 6px 0 #0d47a1;" onclick="multiplayer.joinRoom()">ENTRAR NA SALA</button>
+        </div>
+        
+        <div id="lobby-room" style="display:none;">
+            <div class="room-info">
+                <div style="font-size: 0.9rem; color: #666; margin-bottom: 5px;">CÓDIGO DA SALA:</div>
+                <div class="room-code" id="display-room-code">XXXX</div>
+                <div style="font-size: 0.8rem; color: #666; margin-top: 10px;">Compartilhe este código com seus amigos!</div>
+            </div>
+            
+            <div class="sel-box" id="host-controls" style="display:none;">
+                <label>MODO DE JOGO</label>
+                <select id="game-mode">
+                    <option value="classic">CLÁSSICO ($1000)</option>
+                    <option value="hardcore">HARDCORE ($500)</option>
+                </select>
+            </div>
+            
+            <div class="player-list">
+                <h3 style="margin: 10px 0;">JOGADORES:</h3>
+                <div id="player-list-container"></div>
+            </div>
+            
+            <button class="btn-main" id="btn-start-game" style="display:none;" onclick="multiplayer.startGame()">COMEÇAR JOGO</button>
+            <button class="btn-main" style="background: var(--c-red); box-shadow: 0 6px 0 #b71c1c;" onclick="location.reload()">SAIR</button>
+        </div>
+    </div>
+</div>
+
+<div id="screen-char" style="display:none;">
+    <div class="card-menu">
+        <h2 class="brand" style="font-size:1.5rem; color:var(--c-dark);">ESCOLHA SEU PERSONAGEM:</h2>
+        <div class="char-grid" id="char-grid"></div>
+        <div style="margin-top: 15px; font-size: 0.9rem; color: #666;">Aguardando outros jogadores...</div>
+    </div>
+</div>
+
+<div id="screen-end">
+    <div class="card-menu">
+        <h1 id="end-title" style="font-size:3rem;">FIM</h1>
+        <p id="end-msg">...</p>
+        <button class="btn-main" onclick="location.reload()">JOGAR DE NOVO</button>
+    </div>
+</div>
+
+<div id="game-layout">
+    <div id="board-area">
+        <div id="board-container">
+            <div id="board">
+                <div class="center-hub">
+                    <div class="center-title">
+                        RECIFE <span class="center-sub">IMOBILIÁRIO</span>
+                    </div>
+                    <div class="center-icon">🦈⛱️</div>
+                </div>
+                <div class="deck chance" id="d-chance" onclick="game.clickDeck('ch')"><div class="deck-label">?</div><div style="font-size:0.8rem">SORTE</div></div>
+                <div class="deck reves" id="d-reves" onclick="game.clickDeck('rev')"><div style="font-size:2rem">💰</div><div style="font-size:0.8rem">REVÉS</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="hud-panel">
+        <div id="mobile-controls-wrapper">
+            <div id="action-btns">
+                <button id="b-card" class="btn-game btn-card" onclick="game.forceDrawCard()">🎴 PEGAR CARTA</button>
+                <div id="jail-btns" style="display:none; gap:5px; width:100%; height:100%;">
+                      <button class="btn-game btn-buy" style="flex:1" onclick="game.payJail()">Pagar $50</button>
+                      <button class="btn-game btn-roll" style="flex:1" onclick="game.roll()">Tentar Sorte</button>
+                </div>
+                <div id="normal-btns" style="display:flex; gap:5px; width:100%; height:100%;">
+                    <button id="b-roll" class="btn-game btn-roll" onclick="game.roll()">🎲 ROLAR</button>
+                    <button id="b-buy" class="btn-game btn-buy" disabled onclick="game.buy()">COMPRAR</button>
+                    <button id="b-trade" class="btn-game btn-trade" onclick="game.openTrade()">NEGOCIAR</button>
+                    <button id="b-pass" class="btn-game btn-pass" disabled onclick="game.pass()">PASSAR</button>
+                </div>
+            </div>
+            <div class="hud-top-bar">
+                <div>
+                    <div class="turn-badge" id="turn-display">Aguardando...</div>
+                    <div class="connection-status connected" id="connection-status">● Conectado</div>
+                </div>
+                <div class="money-display" id="p-money">$0</div>
+            </div>
+            <button class="btn-inv" onclick="ui.toggleInv()">💼 ESCRITURAS</button>
+        </div>
+
+        <div class="hud-content">
+            <div id="players-scroll"></div>
+            <div id="desktop-props-container"></div>
+        </div>
+    </div>
+</div>
+
+<div id="inv-modal">
+    <h2 style="color:#fff; text-align:center; font-family:'Titan One';">SUAS PROPRIEDADES</h2>
+    <div id="inv-list"></div>
+    <button class="btn-main" style="margin-top:auto;" onclick="document.getElementById('inv-modal').style.display='none'">FECHAR</button>
+</div>
+
+<div id="trade-modal">
+    <div class="trade-box">
+        <h2 class="brand" style="text-align:center; margin:0;">NEGOCIAÇÃO</h2>
+        <div class="sel-box">
+            <label>QUERO NEGOCIAR COM:</label>
+            <select id="trade-partner" onchange="game.updateTradeUI()"></select>
+        </div>
+        <div class="trade-cols">
+            <div class="t-col">
+                <div class="t-head">EU DOU</div>
+                <div style="padding:5px">
+                    Cash: $<input type="number" id="trade-money-give" value="0" min="0" style="width:60px">
+                </div>
+                <div id="trade-list-give"></div>
+            </div>
+            <div class="t-col">
+                <div class="t-head">EU RECEBO</div>
+                <div id="trade-list-get"></div>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-game btn-buy" onclick="game.sendOffer()">O OUTRO ACEITA?</button>
+            <button class="btn-game btn-pass" onclick="document.getElementById('trade-modal').style.display='none'">CANCELAR</button>
+        </div>
+    </div>
+</div>
+
+<div id="overlay-layer">
+    <div id="overlay-bg" onclick="ui.closeCard()"></div>
+    <div id="dice-visual" class="dice-stage"><div id="d1" class="cube">1</div><div id="d2" class="cube">1</div></div>
+    
+    <div class="card-flip-container" id="card-event">
+        <div class="card-flip" id="card-flipper">
+            <div class="cf-face cf-back" id="cf-back-style">?</div>
+            <div class="cf-face cf-front">
+                <h2 class="brand" id="ev-title" style="font-size:2.5rem; margin-bottom:20px;">SORTE</h2>
+                <p id="ev-desc" style="font-size:1.2rem; font-weight:bold;">Texto...</p>
+                <button class="btn-game btn-roll" style="width:auto; padding:15px 40px; margin-top:30px; color:#000;" onclick="ui.closeEvent()">BELEZA</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="prop-card" class="prop-card">
+        <div class="pc-head" id="pc-name">NOME DA RUA</div>
+        <div style="padding:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:3rem;">🏠</div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.8rem; color:#666; font-weight:bold;">VALOR</div>
+                    <div class="brand" style="font-size:2rem; color:var(--c-green);" id="pc-price">$200</div>
+                </div>
+            </div>
+            <table class="rent-table" id="rent-table-body"></table>
+            <div id="act-buy" style="display:none; margin-top:10px;">
+                <button class="btn-game btn-buy" onclick="game.confirmBuy()">COMPRAR</button>
+                <button class="btn-game" style="background:#546E7A; color:#fff; margin-top:5px;" onclick="ui.closeCard()">NÃO QUERO</button>
+            </div>
+            <div id="act-manage" style="display:none; margin-top:10px;">
+                <div style="background:#ffebee; padding:10px; border-radius:5px; margin-bottom:10px; display:none;" id="loan-info">
+                    <b style="color:#d32f2f">HIPOTECA (AGIOTA)</b><br>
+                    Pagar: <span id="debt-val"></span> | Prazo: <span id="debt-turns"></span>
+                </div>
+                <div style="display:flex; gap:5px; margin-bottom:5px;">
+                    <button id="btn-mtg" class="btn-game btn-roll" style="font-size:0.8rem; padding:10px;" onclick="game.mortgage()">HIPOTECAR</button>
+                    <button id="btn-bld" class="btn-game btn-buy" style="font-size:0.8rem; padding:10px;" onclick="game.build()">+ CASA</button>
+                </div>
+                <button class="btn-game" style="background:#37474F; color:#fff; font-size:0.8rem; padding:10px;" onclick="ui.closeCard()">FECHAR</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
