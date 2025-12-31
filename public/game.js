@@ -1,9 +1,9 @@
 // ===== CONSTANTES DO JOGO =====
 const CHARS=[
-    {id:'rt',i:'💅',n:'A Ratona'}, {id:'as',i:'🗿',n:'Bilola'}, {id:'bt',i:'🛶',n:'Celta'}, {id:'c',i:'🦀',n:'Caranguejo'},
-    {id:'s',i:'🦈',n:'Tubarão'}, {id:'u',i:'☂️',n:'Sombrinha'}, {id:'pd',i:'🐀',n:'Gabiru'}, {id:'bb',i:'🌽',n:'Milho'},
-    {id:'gl',i:'🐔',n:'Galo'}, {id:'brt',i:'🚌',n:'BRT'}, {id:'bdr',i:'🍥',n:'Bolo Rolo'}, {id:'lu',i:'🐻',n:'La Ursa'},
-    {id:'hmn',i:'🎩',n:'Meia-Noite'}, {id:'rp',i:'🚔',n:'Rádio P.'}, {id:'srr',i:'🐚',n:'Sururu'}, {id:'and',i:'😎',n:'Anderson'}
+    {id:'frevo',i:'🎪',n:'Frevo'}, {id:'shark',i:'🦈',n:'Tubarão'}, {id:'maracatu',i:'👑',n:'Maracatu'}, {id:'jangada',i:'⛵',n:'Jangadeiro'},
+    {id:'boneco',i:'🎭',n:'Boneco Gigante'}, {id:'crab',i:'🦀',n:'Mangueboy'}, {id:'palm',i:'🌴',n:'Coqueiro'}, {id:'coral',i:'🪸',n:'Arrecife'},
+    {id:'boat',i:'🚢',n:'Catamarã'}, {id:'guitar',i:'🎸',n:'Capiba'}, {id:'building',i:'🏛️',n:'Paço do Frevo'}, {id:'bridge',i:'🌉',n:'Ponte'},
+    {id:'compass',i:'⭐',n:'Marco Zero'}, {id:'cake',i:'🍰',n:'Bolo de Rolo'}, {id:'rooster',i:'🐓',n:'Galo'}, {id:'river',i:'🌊',n:'Capibaribe'}
 ];
 
 const BD=[
@@ -192,9 +192,11 @@ const multiplayer = {
     },
     
     selectCharacter: (icon) => {
+        const char = CHARS.find(c => c.i === icon);
         multiplayer.send({
             type: 'selectCharacter',
-            icon
+            icon,
+            charId: char ? char.id : 'default'
         });
     },
     
@@ -487,6 +489,7 @@ const ui = {
             t.className='token';
             t.id=`tok${i}`;
             t.setAttribute('data-player', i);
+            t.setAttribute('data-char', p.charId || 'default');
             t.innerHTML=`<span>${p.icon}</span><div class="token-shield" style="display:none" id="sh${i}">🛡️</div>`;
             b.appendChild(t);
         });

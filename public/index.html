@@ -597,6 +597,169 @@
         
         .waiting-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9998; display: none; align-items: center; justify-content: center; }
         .waiting-message { background: #fff; padding: 30px; border-radius: 20px; text-align: center; font-size: 1.5rem; font-family: 'Titan One'; }
+
+        /* ==================== PERSONAGENS 3D RECIFENSES ==================== */
+        /* Animação flutuante base para todos */
+        .token {
+            animation: float-token 3s ease-in-out infinite !important;
+        }
+
+        @keyframes float-token {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* 1. FREVO - Dançarino com sombrinha */
+        .token[data-char="frevo"] {
+            animation: frevo-dance 4s ease-in-out infinite !important;
+        }
+        @keyframes frevo-dance {
+            0%, 100% { transform: rotate(-5deg) translateY(0px); }
+            25% { transform: rotate(3deg) translateY(-3px); }
+            50% { transform: rotate(-2deg) translateY(-5px); }
+            75% { transform: rotate(4deg) translateY(-3px); }
+        }
+
+        /* 2. TUBARÃO - Nadando */
+        .token[data-char="shark"] {
+            animation: shark-swim 4s ease-in-out infinite !important;
+        }
+        @keyframes shark-swim {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(-3px) rotate(-3deg); }
+            50% { transform: translateX(0) rotate(0deg); }
+            75% { transform: translateX(3px) rotate(3deg); }
+        }
+
+        /* 3. MARACATU - Batendo tambor */
+        .token[data-char="maracatu"] {
+            animation: maracatu-beat 2s ease-in-out infinite !important;
+        }
+        @keyframes maracatu-beat {
+            0%, 100% { transform: scale(1); }
+            10%, 30% { transform: scale(1.08); }
+            20% { transform: scale(1.03); }
+        }
+
+        /* 4. JANGADEIRO - Balançando nas ondas */
+        .token[data-char="jangada"] {
+            animation: boat-rock 3s ease-in-out infinite !important;
+        }
+        @keyframes boat-rock {
+            0%, 100% { transform: rotate(-4deg) translateY(0px); }
+            50% { transform: rotate(4deg) translateY(-3px); }
+        }
+
+        /* 5. BONECO GIGANTE - Bamboleando */
+        .token[data-char="boneco"] {
+            animation: bobble 2s ease-in-out infinite !important;
+        }
+        @keyframes bobble {
+            0%, 100% { transform: rotate(-4deg); }
+            50% { transform: rotate(4deg); }
+        }
+
+        /* 6. MANGUEBOY - Andando de lado */
+        .token[data-char="crab"] {
+            animation: crab-walk 3s ease-in-out infinite !important;
+        }
+        @keyframes crab-walk {
+            0%, 100% { transform: translateX(0px) rotate(0deg); }
+            25% { transform: translateX(-4px) rotate(-5deg); }
+            50% { transform: translateX(0px) rotate(0deg); }
+            75% { transform: translateX(4px) rotate(5deg); }
+        }
+
+        /* 7. COQUEIRO - Folhas ao vento */
+        .token[data-char="palm"] {
+            animation: palm-sway 4s ease-in-out infinite !important;
+        }
+        @keyframes palm-sway {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+
+        /* 8. ARRECIFE - Ondulação */
+        .token[data-char="coral"] {
+            animation: coral-sway 4s ease-in-out infinite !important;
+        }
+        @keyframes coral-sway {
+            0%, 100% { transform: rotate(-5deg) scale(1); }
+            50% { transform: rotate(5deg) scale(1.05); }
+        }
+
+        /* 9. CATAMARÃ - Navegando */
+        .token[data-char="boat"] {
+            animation: catamaran-sail 3s ease-in-out infinite !important;
+        }
+        @keyframes catamaran-sail {
+            0%, 100% { transform: rotate(-3deg) translateY(0px); }
+            50% { transform: rotate(3deg) translateY(-4px); }
+        }
+
+        /* 10. CAPIBA - Violão vibrando */
+        .token[data-char="guitar"] {
+            animation: strum 2s ease-in-out infinite !important;
+        }
+        @keyframes strum {
+            0%, 100% { transform: rotate(-8deg); }
+            50% { transform: rotate(8deg); }
+        }
+
+        /* 11. PAÇO DO FREVO - Brilho pulsante */
+        .token[data-char="building"] {
+            animation: building-glow 3s ease-in-out infinite !important;
+        }
+        @keyframes building-glow {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 3px 4px rgba(0,0,0,0.6)); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 5px 8px rgba(255,215,0,0.4)); }
+        }
+
+        /* 12. PONTE - Estrutura sólida com leve balanço */
+        .token[data-char="bridge"] {
+            animation: bridge-subtle 5s ease-in-out infinite !important;
+        }
+        @keyframes bridge-subtle {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-2px); }
+        }
+
+        /* 13. MARCO ZERO - Rosa dos ventos girando */
+        .token[data-char="compass"] {
+            animation: compass-spin 8s linear infinite !important;
+        }
+        @keyframes compass-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 14. BOLO DE ROLO - Brilho guloso */
+        .token[data-char="cake"] {
+            animation: cake-shine 2s ease-in-out infinite !important;
+        }
+        @keyframes cake-shine {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.08); filter: brightness(1.2); }
+        }
+
+        /* 15. GALO - Cantando */
+        .token[data-char="rooster"] {
+            animation: cock-a-doodle 3s ease-in-out infinite !important;
+        }
+        @keyframes cock-a-doodle {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            10%, 30% { transform: scale(1.12) rotate(-5deg); }
+            20% { transform: scale(1.05) rotate(5deg); }
+        }
+
+        /* 16. CAPIBARIBE - Ondas fluindo */
+        .token[data-char="river"] {
+            animation: wave-flow 2s ease-in-out infinite !important;
+        }
+        @keyframes wave-flow {
+            0%, 100% { transform: translateX(0px) scaleX(1); }
+            50% { transform: translateX(4px) scaleX(1.05); }
+        }
     </style>
 </head>
 <body>
