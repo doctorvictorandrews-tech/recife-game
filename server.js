@@ -272,9 +272,9 @@ function startGame(ws, message) {
             id: p.id,
             name: p.name,
             icon: p.icon,
-            charId: p.charId || '', // ✅ MELHORIA: Incluir charId
+            charId: p.charId || '',
             pos: 0,
-            money: initialMoney, // ✅ CORREÇÃO #3: Usa variável correta
+            money: initialMoney,
             jailed: false,
             protection: false,
             jailTurns: 0,
@@ -285,7 +285,8 @@ function startGame(ws, message) {
             skippedTurn: false,
             hasJailCard: false,
             tradedRound: false,
-            boughtRound: false
+            boughtRound: false,
+            hardcoreTaxPaid: false // 🔥 Flag para taxa hardcore
         }))
     };
     
