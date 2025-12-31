@@ -596,12 +596,46 @@ const ui = {
             // Mostrar propriedades do meu jogador
             if(pr && pr.owner === myPlayerId) {
                 const loanTxt = pr.loan ? `<br><span class="loan-alert">Pagar: $${Math.ceil(pr.loan.val*1.5)} (${pr.loan.turns}T)</span>` : '';
-                propsHTML += `<div class="prop-item ${pr.loan?'loan':''}" style="border-left-color:${BD[i].g||'#333'}" onclick="ui.openProp(${i})">
+                propsHTML += `<div class="prop-item ${pr.loan?'loan':''}" style="border-left-color:${BD[i].g||'#333'}" onclick="ui.openProp(${i})" data-color="${BD[i].g||'#333'}" data-price="${BD[i].p||0}" data-index="${i}">
                     <span>${BD[i].n}${loanTxt}</span> 
                     <span>${pr.loan?'⚠️':''} ${pr.level>0?'🏠'+pr.level:''}</span>
                 </div>`;
             }
         });
+        
+        // ✅ NOVA FUNÇÃO: Ordenar propriedades por cor e preço
+        const container = document.createElement('div');
+        container.innerHTML = propsHTML;
+        const propItems = Array.from(container.querySelectorAll('.prop-item'));
+        
+        // Ordenar: primeiro por cor (agrupando), depois por preço (decrescente)
+        propItems.sort((a, b) => {
+            const colorA = a.dataset.color;
+            const colorB = b.dataset.color;
+            const priceA = parseInt(a.dataset.price);
+            const priceB = parseInt(b.dataset.price);
+            
+            // Se mesma cor, ordenar por preço decrescente
+            if (colorA === colorB) {
+                return priceB - priceA;
+            }
+            
+            // Cores diferentes: manter ordem original (primeira aparição)
+            return 0;
+        });
+        
+        // Agrupar por cor
+        const grouped = {};
+        propItems.forEach(item => {
+            const color = item.dataset.color;
+            if (!grouped[color]) grouped[color] = [];
+            grouped[color].push(item);
+        });
+        
+        // Reconstruir HTML ordenado
+        propsHTML = Object.values(grouped).map(group => 
+            group.map(item => item.outerHTML).join('')
+        ).join('');
         
         document.getElementById('desktop-props-container').innerHTML = propsHTML;
         document.getElementById('inv-list').innerHTML = propsHTML;
@@ -836,7 +870,10 @@ const game = {
             if (gameData.tradeAccepted && gameData.pendingOffer) {
                 game.executeTradeFromServer(gameData.pendingOffer);
             } else {
-                ui.toast("Proposta recusada pelo outro jogador");
+                // ✅ CORREÇÃO: Só mostra "recusada" para quem enviou a proposta
+                if (gameData.pendingOffer && gameData.pendingOffer.from === myPlayerId) {
+                    ui.toast("Proposta recusada pelo outro jogador");
+                }
             }
         }
         
@@ -872,10 +909,9 @@ const game = {
             animating = true;
             ui.hud();
             
-            // Gera números aleatórios com seed baseado em timestamp
-            const seed = Date.now() + Math.random() * 1000;
-            const d1 = Math.floor((Math.sin(seed) * 10000) % 6) + 1;
-            const d2 = Math.floor((Math.cos(seed * 1.5) * 10000) % 6) + 1;
+            // ✅ CORREÇÃO: Dados sempre 1-6 (sem negativos)
+            const d1 = Math.floor(Math.random() * 6) + 1;
+            const d2 = Math.floor(Math.random() * 6) + 1;
             const check = d1 + d2;
             
             ui.dice(d1, d2);
@@ -883,42 +919,50 @@ const game = {
             
             if(pendingEvent === 'agamenon') {
                 if(check > 6) {
-                    ui.toast(`CUPOM BK! +$50 (Dados: ${d1}+${d2}=${check})`);
+                    ui.toast(`✅ CUPOM BK! +$50 (Dados: ${d1}+${d2}=${check})`);
                     p.money += 50;
                     play('cash');
                 } else { 
+                    // ✅ CORREÇÃO: Perde próxima jogada (não perde dinheiro)
                     document.querySelector('.traffic-anim').classList.add('active'); 
                     setTimeout(()=>document.querySelector('.traffic-anim').classList.remove('active'), 2000); 
-                    ui.toast(`ENGARRAFAMENTO! -$50 (Dados: ${d1}+${d2}=${check})`);
-                    p.money -= 50;
+                    
+                    // Se tirou duplos, não pula (pode jogar de novo)
+                    if(d1 !== d2) {
+                        p.skippedTurn = true;
+                        ui.toast(`❌ ENGARRAFAMENTO! Perde próxima jogada (Dados: ${d1}+${d2}=${check})`);
+                    } else {
+                        ui.toast(`⚠️ ENGARRAFAMENTO mas salvou pelos DUPLOS! (Dados: ${d1}+${d2}=${check})`);
+                    }
                     play('bad'); 
                 }
             } else if(pendingEvent === 'shark') {
                 if(check > 6) {
-                    ui.toast(`TUBARÃO RATÃO TE PROTEGEU! (Dados: ${d1}+${d2}=${check})`);
+                    ui.toast(`✅ TUBARÃO RATÃO TE PROTEGEU! (Dados: ${d1}+${d2}=${check})`);
                     p.protection = true;
                     play('good');
                 } else {
                     document.querySelector('.shark-anim').classList.add('active'); 
                     setTimeout(()=>document.querySelector('.shark-anim').classList.remove('active'), 3000); 
                     if(p.protection) {
-                        ui.toast(`ESCUDO QUEBROU, MAS VIVEU! (Dados: ${d1}+${d2}=${check})`);
+                        ui.toast(`🛡️ ESCUDO QUEBROU, MAS VIVEU! (Dados: ${d1}+${d2}=${check})`);
                         p.protection = false;
                         play('bad');
                     } else {
-                        ui.toast(`NHAC! MORDIDA! -$100 (Dados: ${d1}+${d2}=${check})`);
+                        ui.toast(`❌ NHAC! MORDIDA! -$100 (Dados: ${d1}+${d2}=${check})`);
                         p.money -= 100;
                         play('bad'); 
                     }
                 }
             }
             
+            // ✅ CORREÇÃO: NÃO retorna aqui! Continua para permitir compra
             pendingEvent = null;
             rolled = true;
             animating = false;
             game.syncGameState();
             ui.hud();
-            return;
+            // return; ❌ REMOVIDO para permitir comprar após evento
         }
 
         if(pendingCardType) return;
@@ -934,15 +978,9 @@ const game = {
         animating=true;
         ui.hud();
         
-        // Dados mais aleatórios com múltiplos seeds
-        const timestamp = Date.now();
-        const random1 = Math.random();
-        const random2 = Math.random();
-        const seed1 = timestamp * random1;
-        const seed2 = (timestamp + 123.456) * random2;
-        
-        const d1 = Math.floor(Math.abs(Math.sin(seed1) * 10000) % 6) + 1;
-        const d2 = Math.floor(Math.abs(Math.cos(seed2) * 10000) % 6) + 1;
+        // ✅ CORREÇÃO: Dados sempre 1-6 (simples e confiável)
+        const d1 = Math.floor(Math.random() * 6) + 1;
+        const d2 = Math.floor(Math.random() * 6) + 1;
         
         p.lastD1 = d1;
         p.lastD2 = d2;
