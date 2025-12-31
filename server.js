@@ -7,10 +7,10 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-// IMPORTANTE: Servir arquivos estáticos da pasta public
+// Servir arquivos estáticos da pasta public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rota raiz - sempre retorna o index.html
+// Rota raiz
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -23,6 +23,18 @@ app.get('/ping', (req, res) => {
 // Estado do jogo
 const games = new Map();
 const playerConnections = new Map();
+
+// Personagens válidos
+const VALID_CHARS = ['💅','🗿','🛶','🦀','🦈','☂️','🐀','🌽','🐔','🚌','🍥','🐻','🎩','🚔','🐚','😎'];
+
+// Função de sanitização
+function sanitizeName(name) {
+    if (!name || typeof name !== 'string') return 'Jogador';
+    return name
+        .replace(/[<>'"]/g, '')
+        .trim()
+        .substring(0, 20) || 'Jogador';
+}
 
 function generateRoomCode() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -101,7 +113,7 @@ function createRoom(ws, message) {
         roomId,
         players: [{
             id: playerId,
-            name: message.playerName || `Jogador 1`,
+            name: sanitizeName(message.playerName),
             icon: '',
             ws: ws,
             connected: true,
@@ -146,7 +158,7 @@ function joinRoom(ws, message) {
     const playerId = game.players.length;
     game.players.push({
         id: playerId,
-        name: message.playerName || `Jogador ${playerId + 1}`,
+        name: sanitizeName(message.playerName),
         icon: '',
         ws: ws,
         connected: true,
@@ -179,6 +191,24 @@ function selectCharacter(ws, message) {
     
     const game = games.get(playerInfo.roomId);
     if (!game) return;
+    
+    // Validar personagem
+    if (!VALID_CHARS.includes(message.icon)) {
+        ws.send(JSON.stringify({ 
+            type: 'error', 
+            message: 'Personagem inválido!' 
+        }));
+        return;
+    }
+    
+    // Verificar se já está em uso
+    if (game.players.some(p => p.icon === message.icon && p.id !== playerInfo.playerId)) {
+        ws.send(JSON.stringify({ 
+            type: 'error', 
+            message: 'Personagem já escolhido!' 
+        }));
+        return;
+    }
     
     const player = game.players.find(p => p.id === playerInfo.playerId);
     if (player) {
