@@ -254,9 +254,9 @@ function startGame(ws, message) {
     
     game.started = true;
     
-    // ✅ CORREÇÃO: Dinheiro inicial correto
+    // ✅ CORREÇÃO FINAL: Dinheiro inicial correto
     // Clássico = $1000 (mais fácil)
-    // Hardcore = $500 (mais difícil)
+    // Hardcore = $500 (MUITO mais difícil)
     const initialMoney = game.gameMode === 'hardcore' ? 500 : 1000;
     
     game.gameData = {
@@ -264,8 +264,9 @@ function startGame(ws, message) {
         rolled: false,
         animating: false,
         pendingCardType: null,
-        pendingEvent: null, // ✅ MELHORIA: Adicionar pendingEvent
+        pendingEvent: null,
         totalTurns: 0,
+        nextGaloTurn: Math.floor(Math.random() * 11) + 20, // ✅ Entre 20-30 turnos
         props: Array(40).fill(null),
         players: game.players.map((p, i) => ({
             id: p.id,
