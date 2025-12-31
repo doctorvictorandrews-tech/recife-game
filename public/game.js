@@ -196,6 +196,26 @@ const multiplayer = {
             type: 'selectCharacter',
             icon
         });
+        
+        // Após selecionar, mostrar sala de espera
+        setTimeout(() => {
+            document.getElementById('screen-char').style.display = 'none';
+            document.getElementById('screen-lobby').style.display = 'flex';
+            document.getElementById('lobby-start').style.display = 'none';
+            document.getElementById('lobby-room').style.display = 'block';
+            
+            if (window.currentGameState) {
+                document.getElementById('display-room-code').innerText = window.currentGameState.roomId;
+                
+                if (window.isHost) {
+                    document.getElementById('host-controls').style.display = 'block';
+                    document.getElementById('btn-start-game').style.display = 'block';
+                }
+            }
+            
+            // Solicitar atualização da lista
+            multiplayer.send({ type: 'syncRequest' });
+        }, 300);
     },
     
     startGame: () => {
@@ -231,6 +251,9 @@ const multiplayer = {
             case 'characterSelected':
                 multiplayer.updateCharacterSelection(message.playerId, message.icon);
                 break;
+            case 'gameSync':
+                multiplayer.syncReceived(message.gameState);
+                break;
             case 'gameStarted':
                 multiplayer.startGameSession(message.gameData);
                 break;
@@ -247,16 +270,16 @@ const multiplayer = {
     },
     
     showRoom: (gameState, isHost) => {
-        document.getElementById('lobby-start').style.display = 'none';
-        document.getElementById('lobby-room').style.display = 'block';
-        document.getElementById('display-room-code').innerText = gameState.roomId;
+        // Esconder lobby e mostrar tela de personagens
+        document.getElementById('screen-lobby').style.display = 'none';
+        document.getElementById('screen-char').style.display = 'flex';
         
-        if (isHost) {
-            document.getElementById('host-controls').style.display = 'block';
-            document.getElementById('btn-start-game').style.display = 'block';
-        }
+        // Armazenar info da sala para depois
+        window.currentGameState = gameState;
+        window.isHost = isHost;
         
-        multiplayer.renderPlayerList(gameState.players);
+        // Renderizar grade de personagens
+        multiplayer.renderCharacterGrid(gameState.players);
     },
     
     renderPlayerList: (playersList) => {
@@ -293,7 +316,19 @@ const multiplayer = {
     },
     
     updateCharacterSelection: (playerId, icon) => {
+        // Solicitar sincronização para atualizar a lista
         multiplayer.send({ type: 'syncRequest' });
+    },
+    
+    syncReceived: (gameState) => {
+        // Atualizar lista de jogadores na sala
+        if (document.getElementById('lobby-room').style.display === 'block') {
+            multiplayer.renderPlayerList(gameState.players);
+        }
+        // Ou atualizar grade de personagens
+        if (document.getElementById('screen-char').style.display === 'flex') {
+            multiplayer.renderCharacterGrid(gameState.players);
+        }
     },
     
     startGameSession: (gameData) => {
