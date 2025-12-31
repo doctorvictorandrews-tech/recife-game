@@ -260,13 +260,14 @@ function startGame(ws, message) {
     const initialMoney = game.gameMode === 'hardcore' ? 500 : 1000;
     
     game.gameData = {
+        gameMode: game.gameMode, // 🔥 CRÍTICO: Enviar modo para os clients!
         turn: 0,
         rolled: false,
         animating: false,
         pendingCardType: null,
         pendingEvent: null,
         totalTurns: 0,
-        nextGaloTurn: Math.floor(Math.random() * 11) + 20, // ✅ Entre 20-30 turnos
+        nextGaloTurn: Math.floor(Math.random() * 11) + 20,
         props: Array(40).fill(null),
         players: game.players.map((p, i) => ({
             id: p.id,
