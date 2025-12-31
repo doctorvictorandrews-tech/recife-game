@@ -254,8 +254,10 @@ function startGame(ws, message) {
     
     game.started = true;
     
-    // ✅ CORREÇÃO #3: Dinheiro inicial correto por modo
-    const initialMoney = game.gameMode === 'hardcore' ? 1000 : 1500;
+    // ✅ CORREÇÃO: Dinheiro inicial correto
+    // Clássico = $1000 (mais fácil)
+    // Hardcore = $500 (mais difícil)
+    const initialMoney = game.gameMode === 'hardcore' ? 500 : 1000;
     
     game.gameData = {
         turn: 0,
