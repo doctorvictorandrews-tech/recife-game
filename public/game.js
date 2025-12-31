@@ -1490,6 +1490,7 @@ const game = {
             rolled,
             animating,
             pendingCardType,
+            pendingEvent, // ✅ CORREÇÃO: Adicionar pendingEvent
             totalTurns
         };
     },
