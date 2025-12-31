@@ -96,6 +96,7 @@ let gameMode = 'classic';
 let pendingCardType = null;
 let pendingEvent = null; // Controla evento aguardando rolagem manual
 let totalTurns = 0;
+let nextGaloTurn = Math.floor(Math.random() * 11) + 20; // ✅ Entre 20-30 turnos
 let myPlayerId = null;
 let roomId = null;
 
@@ -862,6 +863,7 @@ const game = {
         pendingCardType = gameData.pendingCardType;
         pendingEvent = gameData.pendingEvent;
         totalTurns = gameData.totalTurns;
+        if (gameData.nextGaloTurn !== undefined) nextGaloTurn = gameData.nextGaloTurn; // ✅ Sincronizar galo
         
         // Processar ações específicas
         if (action === 'tradeOffer' && gameData.pendingOffer) {
@@ -923,16 +925,20 @@ const game = {
                     p.money += 50;
                     play('cash');
                 } else { 
-                    // ✅ CORREÇÃO: Perde próxima jogada (não perde dinheiro)
+                    // ✅ CORREÇÃO: Verifica duplos da JOGADA ANTERIOR (não do evento)
                     document.querySelector('.traffic-anim').classList.add('active'); 
                     setTimeout(()=>document.querySelector('.traffic-anim').classList.remove('active'), 2000); 
                     
-                    // Se tirou duplos, não pula (pode jogar de novo)
-                    if(d1 !== d2) {
+                    // Verifica se CHEGOU aqui com duplos (lastD1 === lastD2)
+                    const arrivedWithDoubles = p.lastD1 === p.lastD2 && p.lastD1 !== undefined;
+                    
+                    if(!arrivedWithDoubles) {
+                        // Não tinha duplos: perde próxima jogada
                         p.skippedTurn = true;
-                        ui.toast(`❌ ENGARRAFAMENTO! Perde próxima jogada (Dados: ${d1}+${d2}=${check})`);
+                        ui.toast(`❌ ENGARRAFAMENTO! Perde próxima jogada (Dados evento: ${d1}+${d2}=${check})`);
                     } else {
-                        ui.toast(`⚠️ ENGARRAFAMENTO mas salvou pelos DUPLOS! (Dados: ${d1}+${d2}=${check})`);
+                        // Tinha duplos: só perde o direito de jogar de novo
+                        ui.toast(`⚠️ ENGARRAFAMENTO mas tinha DUPLOS! Perde só o bônus (Dados evento: ${d1}+${d2}=${check})`);
                     }
                     play('bad'); 
                 }
@@ -1074,12 +1080,17 @@ const game = {
         
         totalTurns++;
         
-        if(totalTurns%20 === 0) {
-            ui.toast(`O GALO PASSOU! Você volta ao Marco Zero!`);
+        // ✅ CORREÇÃO: Galo passa em turno aleatório entre 20-30
+        if(totalTurns >= nextGaloTurn) {
+            ui.toast(`🐓 O GALO PASSOU! Você volta ao Marco Zero!`);
             // Apenas o jogador atual vai para Marco Zero
             p.money+=200;
             p.pos=0;
             ui.updatePositions();
+            
+            // Definir próximo galo (entre 20-30 turnos a partir de agora)
+            nextGaloTurn = totalTurns + Math.floor(Math.random() * 11) + 20;
+            
             game.syncGameState();
             return;
         }
@@ -1528,8 +1539,9 @@ const game = {
             rolled,
             animating,
             pendingCardType,
-            pendingEvent, // ✅ CORREÇÃO: Adicionar pendingEvent
-            totalTurns
+            pendingEvent,
+            totalTurns,
+            nextGaloTurn // ✅ Sincronizar próximo galo
         };
     },
     
