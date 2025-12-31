@@ -1073,6 +1073,79 @@ const game = {
         const s = BD[p.pos];
         const pr = props[p.pos];
         
+        // 🔥 TAXA HARDCORE - Primeiro turno de cada jogador
+        if(gameMode === 'hardcore' && !p.hardcoreTaxPaid) {
+            p.hardcoreTaxPaid = true;
+            p.money -= 500;
+            
+            // Tela vermelha dramática
+            const hardcoreScreen = document.createElement('div');
+            hardcoreScreen.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(135deg, #8B0000 0%, #DC143C 50%, #8B0000 100%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                animation: hardcore-pulse 0.5s ease-in-out;
+            `;
+            
+            hardcoreScreen.innerHTML = `
+                <style>
+                    @keyframes hardcore-pulse {
+                        0%, 100% { opacity: 0; transform: scale(0.8); }
+                        50% { opacity: 1; transform: scale(1); }
+                    }
+                    .hardcore-title {
+                        font-size: 5rem;
+                        font-weight: 900;
+                        color: #fff;
+                        text-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000;
+                        margin-bottom: 2rem;
+                        letter-spacing: 0.5rem;
+                    }
+                    .hardcore-text {
+                        font-size: 2.5rem;
+                        color: #fff;
+                        text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+                    }
+                </style>
+                <div class="hardcore-title">⚠️ MODO HARDCORE ⚠️</div>
+                <div class="hardcore-text">TAXA INICIAL: -$500</div>
+            `;
+            
+            document.body.appendChild(hardcoreScreen);
+            play('bad');
+            
+            setTimeout(() => {
+                document.body.removeChild(hardcoreScreen);
+                ui.toast(`💀 HARDCORE: Você perdeu $500! Saldo: $${p.money}`);
+            }, 2000);
+            
+            game.syncGameState();
+            
+            // Aguardar animação antes de continuar
+            setTimeout(() => {
+                // Continuar processamento normal após taxa
+                game.continueLand(pid);
+            }, 2100);
+            
+            return;
+        }
+        
+        game.continueLand(pid);
+    },
+    
+    continueLand: (pid) => {
+        const p = players[pid];
+        const s = BD[p.pos];
+        const pr = props[p.pos];
+        
         if(p.pos===30){
             ui.toast("BLITZ!");
             game.jail(pid);
