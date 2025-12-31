@@ -196,26 +196,12 @@ const multiplayer = {
             type: 'selectCharacter',
             icon
         });
-        
-        // Após selecionar, mostrar sala de espera
-        setTimeout(() => {
-            document.getElementById('screen-char').style.display = 'none';
-            document.getElementById('screen-lobby').style.display = 'flex';
-            document.getElementById('lobby-start').style.display = 'none';
-            document.getElementById('lobby-room').style.display = 'block';
-            
-            if (window.currentGameState) {
-                document.getElementById('display-room-code').innerText = window.currentGameState.roomId;
-                
-                if (window.isHost) {
-                    document.getElementById('host-controls').style.display = 'block';
-                    document.getElementById('btn-start-game').style.display = 'block';
-                }
-            }
-            
-            // Solicitar atualização da lista
-            multiplayer.send({ type: 'syncRequest' });
-        }, 300);
+    },
+    
+    backToLobby: () => {
+        document.getElementById('screen-char').style.display = 'none';
+        document.getElementById('screen-lobby').style.display = 'flex';
+        multiplayer.send({ type: 'syncRequest' });
     },
     
     startGame: () => {
@@ -270,16 +256,33 @@ const multiplayer = {
     },
     
     showRoom: (gameState, isHost) => {
-        // Esconder lobby e mostrar tela de personagens
-        document.getElementById('screen-lobby').style.display = 'none';
-        document.getElementById('screen-char').style.display = 'flex';
+        // Mostrar sala de espera PRIMEIRO
+        document.getElementById('screen-lobby').style.display = 'flex';
+        document.getElementById('lobby-start').style.display = 'none';
+        document.getElementById('lobby-room').style.display = 'block';
+        document.getElementById('display-room-code').innerText = gameState.roomId;
         
-        // Armazenar info da sala para depois
+        // Armazenar info da sala
         window.currentGameState = gameState;
         window.isHost = isHost;
         
-        // Renderizar grade de personagens
-        multiplayer.renderCharacterGrid(gameState.players);
+        // Se for host, mostrar controles
+        if (isHost) {
+            document.getElementById('host-controls').style.display = 'block';
+        }
+        
+        // Renderizar lista de jogadores
+        multiplayer.renderPlayerList(gameState.players);
+    },
+    
+    showCharacterSelection: () => {
+        // Depois de configurar sala, mostrar personagens
+        document.getElementById('screen-lobby').style.display = 'none';
+        document.getElementById('screen-char').style.display = 'flex';
+        
+        if (window.currentGameState) {
+            multiplayer.renderCharacterGrid(window.currentGameState.players);
+        }
     },
     
     renderPlayerList: (playersList) => {
@@ -313,6 +316,22 @@ const multiplayer = {
                 ${c.i}
             </div>`;
         }).join('');
+        
+        // Atualizar status e botão de começar
+        const allSelected = playersList.every(p => p.icon);
+        const statusDiv = document.getElementById('char-status');
+        const startBtn = document.getElementById('btn-start-game');
+        
+        if (allSelected) {
+            statusDiv.textContent = '✅ Todos prontos!';
+            if (window.isHost && startBtn) {
+                startBtn.style.display = 'block';
+            }
+        } else {
+            const waiting = playersList.filter(p => !p.icon).length;
+            statusDiv.textContent = `Aguardando ${waiting} jogador(es)...`;
+            if (startBtn) startBtn.style.display = 'none';
+        }
     },
     
     updateCharacterSelection: (playerId, icon) => {
@@ -795,6 +814,17 @@ const game = {
         pendingCardType = gameData.pendingCardType;
         totalTurns = gameData.totalTurns;
         
+        // Processar ações específicas
+        if (action === 'tradeOffer' && gameData.pendingOffer) {
+            game.showTradeOffer(gameData.pendingOffer);
+        } else if (action === 'tradeResponse') {
+            if (gameData.tradeAccepted && gameData.pendingOffer) {
+                game.executeTradeFromServer(gameData.pendingOffer);
+            } else {
+                ui.toast("Proposta recusada pelo outro jogador");
+            }
+        }
+        
         ui.updatePositions();
         ui.hud();
     },
@@ -1272,27 +1302,137 @@ const game = {
         const giveIndices = Array.from(checks).map(c=>parseInt(c.value));
         const radio = document.querySelector('input[name="rad-get"]:checked');
         
-        if(!radio) {
-            ui.toast("Escolha o que quer!");
+        if(!radio && moneyGive === 0 && giveIndices.length === 0) {
+            ui.toast("Escolha algo para negociar!");
             return;
         }
         
-        const getIndex = parseInt(radio.value);
+        const getIndex = radio ? parseInt(radio.value) : null;
         
-        // Manual acceptance
-        ui.toast("NEGÓCIO FECHADO!");
-        play('cash');
+        // Enviar proposta para o servidor
+        const offer = {
+            from: myPlayerId,
+            to: targetId,
+            moneyGive: moneyGive,
+            propsGive: giveIndices,
+            propGet: getIndex
+        };
         
-        players[turn].money -= moneyGive;
-        players[targetId].money += moneyGive;
-        props[getIndex].owner = turn;
-        giveIndices.forEach(i => props[i].owner = targetId);
-        
-        players[turn].tradedRound = true;
+        multiplayer.send({
+            type: 'gameAction',
+            action: 'tradeOffer',
+            gameData: { ...game.getState(), pendingOffer: offer }
+        });
         
         document.getElementById('trade-modal').style.display='none';
-        game.syncGameState();
+        ui.toast("Proposta enviada! Aguardando resposta...");
+    },
+    
+    showTradeOffer: (offer) => {
+        // Mostrar modal de oferta para o jogador alvo
+        if (offer.to !== myPlayerId) return;
+        
+        const fromPlayer = players[offer.from];
+        document.getElementById('offer-from').textContent = `${fromPlayer.icon} ${fromPlayer.name} propõe:`;
+        
+        // Mostrar dinheiro
+        if (offer.moneyGive > 0) {
+            document.getElementById('offer-receive-money').innerHTML = `💰 $${offer.moneyGive}`;
+        } else {
+            document.getElementById('offer-receive-money').innerHTML = '';
+        }
+        
+        // Mostrar propriedades que você recebe
+        if (offer.propsGive.length > 0) {
+            document.getElementById('offer-receive-props').innerHTML = offer.propsGive.map(i =>
+                `<div style="padding:5px; background:#e8f5e9; margin:3px; border-radius:5px;">🏠 ${BD[i].n}</div>`
+            ).join('');
+        } else {
+            document.getElementById('offer-receive-props').innerHTML = '<div style="padding:10px; color:#999;">Nenhuma propriedade</div>';
+        }
+        
+        // Mostrar propriedade que você dá
+        if (offer.propGet !== null) {
+            document.getElementById('offer-give-props').innerHTML =
+                `<div style="padding:5px; background:#ffebee; margin:3px; border-radius:5px;">🏠 ${BD[offer.propGet].n}</div>`;
+        } else {
+            document.getElementById('offer-give-props').innerHTML = '<div style="padding:10px; color:#999;">Nenhuma propriedade</div>';
+        }
+        
+        // Mostrar modal
+        document.getElementById('trade-offer-modal').style.display = 'flex';
+        
+        // Timer de 60 segundos
+        let timeLeft = 60;
+        const timerEl = document.getElementById('offer-timer');
+        const timerInterval = setInterval(() => {
+            timeLeft--;
+            timerEl.textContent = `Tempo: ${timeLeft}s`;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                game.respondOffer(false); // Auto-recusar
+            }
+        }, 1000);
+        
+        // Guardar interval para limpar depois
+        window.tradeTimerInterval = timerInterval;
+    },
+    
+    respondOffer: (accepted) => {
+        // Limpar timer
+        if (window.tradeTimerInterval) {
+            clearInterval(window.tradeTimerInterval);
+        }
+        
+        // Fechar modal
+        document.getElementById('trade-offer-modal').style.display = 'none';
+        
+        // Enviar resposta
+        multiplayer.send({
+            type: 'gameAction',
+            action: 'tradeResponse',
+            gameData: { ...game.getState(), tradeAccepted: accepted }
+        });
+        
+        if (accepted) {
+            ui.toast("Proposta aceita!");
+        } else {
+            ui.toast("Proposta recusada!");
+        }
+    },
+    
+    executeTradeFromServer: (tradeData) => {
+        // Executar a troca quando confirmada pelo servidor
+        const { from, to, moneyGive, propsGive, propGet } = tradeData;
+        
+        players[from].money -= moneyGive;
+        players[to].money += moneyGive;
+        
+        if (propGet !== null) {
+            props[propGet].owner = from;
+        }
+        
+        propsGive.forEach(i => {
+            props[i].owner = to;
+        });
+        
+        players[from].tradedRound = true;
+        
+        play('cash');
+        ui.toast("NEGÓCIO FECHADO!");
         ui.hud();
+    },
+    
+    getState: () => {
+        return {
+            players,
+            props,
+            turn,
+            rolled,
+            animating,
+            pendingCardType,
+            totalTurns
+        };
     },
     
     applyCard: () => {
