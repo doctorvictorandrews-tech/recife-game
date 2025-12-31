@@ -16,25 +16,68 @@
         
         body { 
             margin: 0; font-family: 'Nunito', sans-serif; 
-            background: linear-gradient(120deg, #1565c0, #fbc02d, #c62828, #1565c0);
-            background-size: 400% 400%; animation: frevoBG 15s ease infinite;
+            /* Céu azul → horizonte dourado → areia */
+            background: linear-gradient(180deg, 
+                #87CEEB 0%,      /* Céu azul claro */
+                #4A90E2 25%,     /* Céu médio */
+                #FFE5B4 75%,     /* Horizonte dourado */
+                #F4E4C1 100%     /* Areia clara */
+            );
             height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column;
             position: relative;
         }
         
-        /* Padrão de fundo inspirado em Azulejos Portugueses */
+        /* Ondas do mar animadas no fundo */
         body::before {
             content: '';
             position: fixed;
-            inset: 0;
-            background-image: 
-                repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.05) 35px, rgba(255,255,255,.05) 70px),
-                repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(255,255,255,.03) 35px, rgba(255,255,255,.03) 70px);
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 35%;
+            background: 
+                linear-gradient(90deg, transparent, rgba(0, 105, 148, 0.15), transparent),
+                linear-gradient(180deg, transparent 30%, rgba(0, 105, 148, 0.8) 100%);
+            animation: waves 10s ease-in-out infinite;
             pointer-events: none;
-            opacity: 0.3;
+            z-index: 0;
         }
         
-        @keyframes frevoBG { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        @keyframes waves {
+            0%, 100% { 
+                transform: translateY(0) scaleY(1); 
+                opacity: 1;
+            }
+            50% { 
+                transform: translateY(-8px) scaleY(1.03); 
+                opacity: 0.9;
+            }
+        }
+        
+        /* Nuvens flutuantes */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 35%;
+            background-image: 
+                radial-gradient(ellipse 180px 90px at 15% 35%, rgba(255, 255, 255, 0.7), transparent),
+                radial-gradient(ellipse 220px 110px at 55% 25%, rgba(255, 255, 255, 0.6), transparent),
+                radial-gradient(ellipse 200px 100px at 85% 40%, rgba(255, 255, 255, 0.65), transparent);
+            animation: cloudMove 50s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        @keyframes cloudMove {
+            0% { background-position: 0% 0%, 0% 0%, 0% 0%; }
+            100% { background-position: 100% 0%, 100% 0%, 100% 0%; }
+        }
+        
+        /* Remover frevoBG antigo */
+        @keyframes frevoBG {}
 
         h1, h2, h3, button, .brand { font-family: 'Titan One', cursive; letter-spacing: 1px; text-shadow: 2px 2px 0 rgba(0,0,0,0.2); }
 
@@ -74,17 +117,35 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 10px;
+            height: 12px;
             background: repeating-linear-gradient(
                 90deg,
                 #1565c0 0px, #1565c0 20px,
                 #fbc02d 20px, #fbc02d 40px,
                 #d32f2f 40px, #d32f2f 60px
             );
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        /* Padrão de azulejo português sutil */
+        .card-menu::after {
+            content: '';
+            position: absolute;
+            inset: 12px 0 0 0;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(0, 105, 148, 0.04) 2%, transparent 3%),
+                radial-gradient(circle at 75% 75%, rgba(0, 105, 148, 0.04) 2%, transparent 3%),
+                radial-gradient(circle at 25% 75%, rgba(0, 105, 148, 0.04) 2%, transparent 3%),
+                radial-gradient(circle at 75% 25%, rgba(0, 105, 148, 0.04) 2%, transparent 3%);
+            background-size: 50px 50px;
+            pointer-events: none;
+            opacity: 0.6;
+            z-index: 0;
         }
         
         .card-menu h2 {
             position: relative;
+            z-index: 1;
             color: var(--c-dark);
             margin-top: 10px;
             font-size: 2rem;
@@ -94,6 +155,7 @@
             margin: 20px 0; 
             text-align: left;
             position: relative;
+            z-index: 1;
         }
         
         select, input[type="text"] { 
@@ -190,43 +252,58 @@
             display: grid; 
             grid-template-columns: repeat(11, 1fr); 
             grid-template-rows: repeat(11, 1fr); 
+            /* Fundo estilo mapa: água (rio/mar) + terra verde */
             background: 
-                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1), transparent),
-                linear-gradient(135deg, #8bc34a 0%, #c5e1a5 50%, #aed581 100%);
-            border: 8px solid #4a2c1f;
+                /* Áreas de água simulando rio Capibaribe */
+                radial-gradient(ellipse 350px 150px at 30% 40%, rgba(0, 206, 209, 0.25), transparent 65%),
+                radial-gradient(ellipse 300px 130px at 70% 60%, rgba(74, 144, 226, 0.2), transparent 60%),
+                /* Brilho sutil */
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15), transparent),
+                /* Base verde (terra/vegetação) */
+                linear-gradient(135deg, 
+                    #c5e1a5 0%,    /* Verde claro */
+                    #aed581 30%,
+                    #9ccc65 60%,
+                    #8bc34a 85%,
+                    #7cb342 100%   /* Verde escuro */
+                );
+            border: 10px solid #4a2c1f;
             box-shadow: 
-                0 0 0 4px #d7ccc8,
-                inset 0 0 50px rgba(0,0,0,0.1),
-                0 20px 60px rgba(0,0,0,0.5);
+                0 0 0 6px #d7ccc8,
+                inset 0 0 80px rgba(0,0,0,0.12),
+                0 25px 80px rgba(0,0,0,0.6);
             position: relative;
         }
         
-        /* Textura de madeira nas bordas */
+        /* Textura de madeira trabalhada nas bordas */
         #board::before {
             content: '';
             position: absolute;
-            inset: -8px;
-            background: 
-                repeating-linear-gradient(90deg, 
-                    #6d4c41 0px, #5d4037 2px, 
-                    #4e342e 4px, #5d4037 6px);
+            inset: -10px;
+            background: repeating-linear-gradient(90deg,
+                #6d4c41 0px, #5d4037 3px,
+                #4e342e 6px, #5d4037 9px,
+                #3e2723 12px
+            );
             z-index: -1;
             border-radius: 4px;
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.5);
         }
         
-        /* Decoração de canto - Marca d'água "RECIFE" */
+        /* Marca d'água "RECIFE" gigante */
         #board::after {
             content: 'RECIFE';
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 12rem;
+            font-size: 14rem;
             font-family: 'Titan One';
-            color: rgba(255,255,255,0.05);
-            letter-spacing: 20px;
+            color: rgba(255,255,255,0.08);
+            letter-spacing: 30px;
             pointer-events: none;
             z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
         }
 
         /* PAINEL HUD - ESCONDIDO ATÉ JOGO COMEÇAR */
