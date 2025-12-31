@@ -94,6 +94,7 @@ let animating = false;
 let activeIdx = -1;
 let gameMode = 'classic';
 let pendingCardType = null;
+let pendingEvent = null; // Controla evento aguardando rolagem manual
 let totalTurns = 0;
 let myPlayerId = null;
 let roomId = null;
@@ -657,8 +658,16 @@ const ui = {
                 document.getElementById('b-pass').disabled = true;
             } else {
                 const doubles = p.lastD1 === p.lastD2 && p.lastD1 !== undefined;
-                const canRoll = !animating && !pendingCardType && (!rolled || (rolled && doubles));
+                // Pode rolar se: evento pendente OU (não rolou ainda OU rolou duplos)
+                const canRoll = !animating && (!pendingCardType || pendingEvent) && (pendingEvent || !rolled || (rolled && doubles));
                 document.getElementById('b-roll').disabled = !canRoll;
+                
+                // Se tem evento pendente, mudar texto do botão
+                if(pendingEvent) {
+                    document.getElementById('b-roll').innerText = '🎲 ROLAR EVENTO';
+                } else {
+                    document.getElementById('b-roll').innerText = 'ROLAR';
+                }
                 
                 if(p.money < 0) {
                     document.getElementById('b-roll').disabled = true;
@@ -668,9 +677,9 @@ const ui = {
                     document.getElementById('b-pass').innerText = "HIPOTEQUE!";
                 } else {
                     document.getElementById('b-pass').innerText = "PASSAR";
-                    document.getElementById('b-pass').disabled = !(rolled && !pendingCardType && !doubles);
+                    document.getElementById('b-pass').disabled = !(rolled && !pendingCardType && !doubles && !pendingEvent);
                     const alreadyTraded = p.tradedRound;
-                    document.getElementById('b-trade').disabled = alreadyTraded || (rolled && !doubles); 
+                    document.getElementById('b-trade').disabled = alreadyTraded || (rolled && !doubles) || pendingEvent; 
                 }
                 
                 const btnCard = document.getElementById('b-card');
@@ -804,6 +813,7 @@ const game = {
             rolled,
             animating,
             pendingCardType,
+            pendingEvent,
             totalTurns
         };
         multiplayer.sendGameAction('sync', gameData);
@@ -816,6 +826,7 @@ const game = {
         rolled = gameData.rolled;
         animating = gameData.animating;
         pendingCardType = gameData.pendingCardType;
+        pendingEvent = gameData.pendingEvent;
         totalTurns = gameData.totalTurns;
         
         // Processar ações específicas
@@ -851,10 +862,66 @@ const game = {
     
     roll: async () => {
         if(turn !== myPlayerId) return;
-        if(animating || pendingCardType) return;
+        if(animating) return;
         
         const p = players[turn];
         if(p.money < 0) return;
+
+        // Se tem evento pendente, processa ele
+        if(pendingEvent) {
+            animating = true;
+            ui.hud();
+            
+            // Gera números aleatórios com seed baseado em timestamp
+            const seed = Date.now() + Math.random() * 1000;
+            const d1 = Math.floor((Math.sin(seed) * 10000) % 6) + 1;
+            const d2 = Math.floor((Math.cos(seed * 1.5) * 10000) % 6) + 1;
+            const check = d1 + d2;
+            
+            ui.dice(d1, d2);
+            await sleep(1500);
+            
+            if(pendingEvent === 'agamenon') {
+                if(check > 6) {
+                    ui.toast(`CUPOM BK! +$50 (Dados: ${d1}+${d2}=${check})`);
+                    p.money += 50;
+                    play('cash');
+                } else { 
+                    document.querySelector('.traffic-anim').classList.add('active'); 
+                    setTimeout(()=>document.querySelector('.traffic-anim').classList.remove('active'), 2000); 
+                    ui.toast(`ENGARRAFAMENTO! -$50 (Dados: ${d1}+${d2}=${check})`);
+                    p.money -= 50;
+                    play('bad'); 
+                }
+            } else if(pendingEvent === 'shark') {
+                if(check > 6) {
+                    ui.toast(`TUBARÃO RATÃO TE PROTEGEU! (Dados: ${d1}+${d2}=${check})`);
+                    p.protection = true;
+                    play('good');
+                } else {
+                    document.querySelector('.shark-anim').classList.add('active'); 
+                    setTimeout(()=>document.querySelector('.shark-anim').classList.remove('active'), 3000); 
+                    if(p.protection) {
+                        ui.toast(`ESCUDO QUEBROU, MAS VIVEU! (Dados: ${d1}+${d2}=${check})`);
+                        p.protection = false;
+                        play('bad');
+                    } else {
+                        ui.toast(`NHAC! MORDIDA! -$100 (Dados: ${d1}+${d2}=${check})`);
+                        p.money -= 100;
+                        play('bad'); 
+                    }
+                }
+            }
+            
+            pendingEvent = null;
+            rolled = true;
+            animating = false;
+            game.syncGameState();
+            ui.hud();
+            return;
+        }
+
+        if(pendingCardType) return;
 
         if(p.skippedTurn) {
             ui.toast(`${p.name} NO ENGARRAFAMENTO!`);
@@ -867,7 +934,16 @@ const game = {
         animating=true;
         ui.hud();
         
-        const d1=Math.ceil(Math.random()*6), d2=Math.ceil(Math.random()*6);
+        // Dados mais aleatórios com múltiplos seeds
+        const timestamp = Date.now();
+        const random1 = Math.random();
+        const random2 = Math.random();
+        const seed1 = timestamp * random1;
+        const seed2 = (timestamp + 123.456) * random2;
+        
+        const d1 = Math.floor(Math.abs(Math.sin(seed1) * 10000) % 6) + 1;
+        const d2 = Math.floor(Math.abs(Math.cos(seed2) * 10000) % 6) + 1;
+        
         p.lastD1 = d1;
         p.lastD2 = d2;
         ui.dice(d1,d2);
@@ -970,42 +1046,24 @@ const game = {
             return;
         }
         
-        // Agamenon (Casa 6)
+        // Agamenon (Casa 6) - Rolagem manual
         if(s.n === "Agamenon" && (!pr || pr.owner!==pid)) {
-            const check = Math.ceil(Math.random()*6) + Math.ceil(Math.random()*6);
-            if(check > 6) {
-                ui.toast(`CUPOM BK! +$50 (Dado: ${check})`);
-                p.money += 50;
-                play('cash');
-            } else { 
-                document.querySelector('.traffic-anim').classList.add('active'); 
-                setTimeout(()=>document.querySelector('.traffic-anim').classList.remove('active'), 2000); 
-                ui.toast(`ENGARRAFAMENTO! -$50 (Dado: ${check})`);
-                p.money -= 50;
-                play('bad'); 
-            }
+            pendingEvent = 'agamenon';
+            ui.toast(`⚠️ AGAMENON! ROLE OS DADOS para ver se pega cupom BK!`);
+            animating = false;
+            game.syncGameState();
+            ui.hud();
+            return;
         }
         
-        // Tubarão nas praias
+        // Tubarão nas praias - Rolagem manual
         if((s.n === "Boa Viagem" || s.n === "Paiva" || s.n === "Pina")){ 
-             const check = Math.ceil(Math.random()*6) + Math.ceil(Math.random()*6);
-             if(check > 6) {
-                 ui.toast(`TUBARÃO RATÃO TE PROTEGEU! (Dado: ${check})`);
-                 p.protection = true;
-                 play('good');
-             } else {
-                 document.querySelector('.shark-anim').classList.add('active'); 
-                 setTimeout(()=>document.querySelector('.shark-anim').classList.remove('active'), 3000); 
-                 if(p.protection) {
-                     ui.toast(`ESCUDO QUEBROU, MAS VIVEU! (Dado: ${check})`);
-                     p.protection = false;
-                     play('bad');
-                 } else {
-                     ui.toast(`NHAC! MORDIDA! -$100 (Dado: ${check})`);
-                     p.money-=100;
-                     play('bad'); 
-                 }
-             }
+             pendingEvent = 'shark';
+             ui.toast(`🦈 ALERTA DE TUBARÃO! ROLE OS DADOS para ver se escapa!`);
+             animating = false;
+             game.syncGameState();
+             ui.hud();
+             return;
         }
 
         if(s.t==='pr' || s.t==='rr' || s.t==='ut'){
